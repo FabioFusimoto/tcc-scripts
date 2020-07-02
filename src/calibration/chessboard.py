@@ -7,7 +7,7 @@ import glob
 # termination criteria
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
-def calibrate(path, prefix, imageFormat, squareSize, width=9, height=6, shouldDownsize=True, scale=0.5):
+def calibrate(sourcePath, outputPath, prefix, imageFormat, squareSize, width=9, height=6, shouldDownsize=True, scale=0.5):
     """Calibrates camera parameters for chessboard images on the given path"""
 
     # Creating a matrix of points to map
@@ -22,7 +22,7 @@ def calibrate(path, prefix, imageFormat, squareSize, width=9, height=6, shouldDo
     pointsInPlane = []
 
     # Fetching all calibration photos which match the given path, prefix and format
-    photoFiles = glob.glob(path + '/' + prefix + '*.' + imageFormat)
+    photoFiles = glob.glob(sourcePath + '/' + prefix + '*.' + imageFormat)
 
     chessboardCornersFound = 0
     for f in photoFiles:
@@ -50,8 +50,11 @@ def calibrate(path, prefix, imageFormat, squareSize, width=9, height=6, shouldDo
             refinedCorners = cv2.cornerSubPix(grayPhoto, corners, (11, 11), (-1, -1), criteria)
             pointsInPlane.append(refinedCorners)
 
-            # Draw and display the refined corners, if found
+            # Save the photos with the corners drawn, if found
             cv2.drawChessboardCorners(photo, (width, height), refinedCorners, patternWasFound)
+            scaleAsString = str(scale * 100).split('.')[0]
+            outputFilename = outputPath + '/' + str(f).split('\\')[1].split('.')[0] + '-corners-' + scaleAsString + '.' + imageFormat
+            cv2.imwrite(outputFilename, photo)
 
         end = timer()
         print('Time elapsed on processsing: ' + str(end - start) + 's')
@@ -74,7 +77,60 @@ def loadCalibrationCoeficients(path):
     cvFileHandler = cv2.FileStorage(path, cv2.FILE_STORAGE_READ)
 
     cameraMatrix = cvFileHandler.getNode("K").mat()
-    distortionMatrix = cvFileHandler.getNode("D").mat()
+    distortionCoefficients = cvFileHandler.getNode("D").mat()
 
     cvFileHandler.release()
-    return [cameraMatrix, distortionMatrix]
+    return [cameraMatrix, distortionCoefficients]
+
+def undistortImage(sourceFile, outputFile, cameraMatrix, distortionCoeffs, scale=1.0):
+    originalImage = cv2.imread(sourceFile)
+    scaledImage = cv2.resize(originalImage, None, fx=scale, fy=scale)
+    h, w = scaledImage.shape[:2] # scaled image resolution - height x width
+    newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(cameraMatrix, distortionCoeffs, (w, h), 1, (w, h))
+
+    # Correcting distortions and cropping the result
+    undistortedImage = cv2.undistort(scaledImage, cameraMatrix, distortionCoeffs, None, newCameraMatrix)
+    x, y, w, h = roi
+    undistortedImage = undistortedImage[y:y+h, x:x+w]
+    cv2.imwrite(outputFile, undistortedImage)
+
+def drawAxis(image, corners, imagePoints):
+    corner = tuple(corners[0].ravel())
+
+    image = cv2.line(image, corner, tuple(imagePoints[0].ravel()), (255,0,0), 5)
+    image = cv2.line(image, corner, tuple(imagePoints[1].ravel()), (0,255,0), 5)
+    image = cv2.line(image, corner, tuple(imagePoints[2].ravel()), (0,0,255), 5)
+    
+    return image
+
+def drawOnChessboard(sourceFile, outputFile, axisLength, cameraMatrix, distortionCoeffs, width=9, height=6, scale=1.0):
+    objectPoints = np.zeros((height*width, 3), np.float32)
+    objectPoints[:, :2] = np.mgrid[0:width, 0:height].T.reshape(-1, 2)
+    axis = np.array([[axisLength,0,0], [0,axisLength,0], [0,0,-axisLength]], dtype='f').reshape(-1, 3)
+
+    sourceImage = cv2.imread(sourceFile)
+    sourceImage = cv2.resize(sourceImage, None, fx=scale, fy=scale)
+
+    grayImage = cv2.cvtColor(sourceImage, cv2.COLOR_BGR2GRAY)
+
+    flags = cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_NORMALIZE_IMAGE
+    found, corners = cv2.findChessboardCorners(grayImage, (width, height), flags)
+
+    if found:
+        refinedCorners = cv2.cornerSubPix(grayImage, corners, (11,11), (-1, -1), criteria)
+
+        # Find the rotation and translation vectors
+        _, rotVectors, traVectors, _ = cv2.solvePnPRansac(objectPoints, refinedCorners, cameraMatrix, distortionCoeffs)
+
+        # Project 3D points to the image plane
+        imagePoints, _ = cv2.projectPoints(axis, rotVectors, traVectors, cameraMatrix, distortionCoeffs)
+
+        imageWithAxis = drawAxis(sourceImage, refinedCorners, imagePoints)
+        cv2.imshow('Drawn axis', cv2.resize(imageWithAxis, None, fx=0.3, fy=0.3)) # displaying the resized image so it fits
+
+        print('Press a key to exit and save the image')
+
+        cv2.waitKey(0)
+        cv2.imwrite(outputFile, imageWithAxis)
+    
+    cv2.destroyAllWindows()
