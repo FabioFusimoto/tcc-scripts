@@ -1,8 +1,6 @@
 from timeit import default_timer as timer
 
 import cv2.cv2 as cv2
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 import glob
 import numpy as np
 
@@ -34,7 +32,7 @@ for i in range(len(chessImages)):
 
     # Read in the image
     readStart = timer()
-    chessBoardImage = mpimg.imread(chessImages[i])
+    chessBoardImage = cv2.imread(chessImages[i])
     readEnd = timer()
     print('Time elapsed to read the image: ' + str(readEnd - readStart))
 

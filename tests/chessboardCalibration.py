@@ -2,42 +2,39 @@ import pprint
 
 import src.calibration.chessboard as chess
 
-calibrationImagesPath = 'images/for-calibration'
-calibrationImagesPrefix = 'C'
-calibrationImagesFormat = 'jpg'
+def getCoefficients(imgSrcPath, imgOutPath, imgPrefix, imgFormat, sqrSize, boardWidth, boardHeight, downsize, scale):
+    # Calculating coefficients
+    ret, mtx, dist, rvecs, tvecs = chess.calibrate(imgSrcPath, imgOutPath, imgPrefix, imgFormat, sqrSize,
+                                                   boardWidth, boardHeight, downsize, scale)
 
-realChessboardSquareSize = 17.85 / 6 # in meters - total length / square count
-realChessboardWidth = 9
-realChessboardHeight = 6
+    print('\nReturn value:')
+    pprint.pprint(ret)
 
-shouldDownsize = True
-downsizeScale = 0.5
+    print('\nCamera intrinsic parameters matrix:')
+    pprint.pprint(mtx)
 
-# Getting calibration coefficients
-ret, mtx, dist, rvecs, tvecs = chess.calibrate(calibrationImagesPath,
-                                               calibrationImagesPrefix,
-                                               calibrationImagesFormat,
-                                               realChessboardSquareSize,
-                                               realChessboardWidth,
-                                               realChessboardHeight,
-                                               shouldDownsize,
-                                               downsizeScale)
+    print('\nDistortion coefficients:')
+    pprint.pprint(dist)
 
-print('\nReturn value:')
-pprint.pprint(ret)
+    print('\nRotation vectors:')
+    pprint.pprint(rvecs)
 
-print('\nCamera intrinsic parameters matrix:')
-pprint.pprint(mtx)
+    print('\nTranslation vectors:')
+    pprint.pprint(tvecs)
 
-print('\nDistortion coefficients:')
-pprint.pprint(dist)
+    # Saving the calibration coefficients
+    scaleAsString = str(scale * 100).split('.')[0]
+    filename = 'tests/calibration-coefficients/g7-play-' + scaleAsString + '-percent-resolution.yml'
+    chess.saveCalibrationCoeficients(mtx, dist, filename)
 
-print('\nRotation vectors:')
-pprint.pprint(rvecs)
+def undistortImage(imageSource, imageOutput, calibrationFile, scale):
+    '''Undistorts image based on a calibration file. The calibration is resolution sensitive,
+       so the chosen scale must be on par with the given calibration'''
 
-print('\nTranslation vectors:')
-pprint.pprint(tvecs)
+    cameraMatrix, distortionCoefficients = chess.loadCalibrationCoeficients(calibrationFile)
+    chess.undistortImage(imageSource, imageOutput, cameraMatrix, distortionCoefficients, scale)
 
-# Saving the calibration coefficients
-filename = 'tests/calibration-coefficients/g7-play.yml'
-chess.saveCalibrationCoeficients(mtx, dist, filename)
+# getCoefficients('images/for-calibration', 'images/calibration-output', 'C', 'jpg', 17.85 / 6, 9, 6, True, 0.25)
+
+undistortImage('images/for-calibration/C11.jpg', 'images/calibration-output/C11-undistorted.jpg', 
+               'tests/calibration-coefficients/g7-play-75-percent-resolution.yml', 0.75)

@@ -7,7 +7,7 @@ import glob
 # termination criteria
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
-def calibrate(path, prefix, imageFormat, squareSize, width=9, height=6, shouldDownsize=True, scale=0.5):
+def calibrate(sourcePath, outputPath, prefix, imageFormat, squareSize, width=9, height=6, shouldDownsize=True, scale=0.5):
     """Calibrates camera parameters for chessboard images on the given path"""
 
     # Creating a matrix of points to map
@@ -22,7 +22,7 @@ def calibrate(path, prefix, imageFormat, squareSize, width=9, height=6, shouldDo
     pointsInPlane = []
 
     # Fetching all calibration photos which match the given path, prefix and format
-    photoFiles = glob.glob(path + '/' + prefix + '*.' + imageFormat)
+    photoFiles = glob.glob(sourcePath + '/' + prefix + '*.' + imageFormat)
 
     chessboardCornersFound = 0
     for f in photoFiles:
@@ -50,8 +50,11 @@ def calibrate(path, prefix, imageFormat, squareSize, width=9, height=6, shouldDo
             refinedCorners = cv2.cornerSubPix(grayPhoto, corners, (11, 11), (-1, -1), criteria)
             pointsInPlane.append(refinedCorners)
 
-            # Draw and display the refined corners, if found
+            # Save the photos with the corners drawn, if found
             cv2.drawChessboardCorners(photo, (width, height), refinedCorners, patternWasFound)
+            scaleAsString = str(scale * 100).split('.')[0]
+            outputFilename = outputPath + '/' + str(f).split('\\')[1].split('.')[0] + '-corners-' + scaleAsString + '.' + imageFormat
+            cv2.imwrite(outputFilename, photo)
 
         end = timer()
         print('Time elapsed on processsing: ' + str(end - start) + 's')
@@ -74,7 +77,19 @@ def loadCalibrationCoeficients(path):
     cvFileHandler = cv2.FileStorage(path, cv2.FILE_STORAGE_READ)
 
     cameraMatrix = cvFileHandler.getNode("K").mat()
-    distortionMatrix = cvFileHandler.getNode("D").mat()
+    distortionCoefficients = cvFileHandler.getNode("D").mat()
 
     cvFileHandler.release()
-    return [cameraMatrix, distortionMatrix]
+    return [cameraMatrix, distortionCoefficients]
+
+def undistortImage(srcImg, outputImage, cameraMatrix, distortionCoeffs, scale=1.0):
+    originalImage = cv2.imread(srcImg)
+    scaledImage = cv2.resize(originalImage, None, fx=scale, fy=scale)
+    h, w = scaledImage.shape[:2] # scaled image resolution - height x width
+    newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(cameraMatrix, distortionCoeffs, (w, h), 1, (w, h))
+
+    # Correcting distortions and cropping the result
+    undistortedImage = cv2.undistort(scaledImage, cameraMatrix, distortionCoeffs, None, newCameraMatrix)
+    x, y, w, h = roi
+    undistortedImage = undistortedImage[y:y+h, x:x+w]
+    cv2.imwrite(outputImage, undistortedImage)
