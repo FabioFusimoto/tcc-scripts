@@ -1,0 +1,6 @@
+*.pyc
+Include/
+Lib/
+Scripts/
+.vscode/
+pyvenv.cfg
