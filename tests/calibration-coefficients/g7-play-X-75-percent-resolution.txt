@@ -1,0 +1,441 @@
+Reading image X00.jpg
+Time elapsed on processsing: 23.7428939s
+
+Reading image X01.jpg
+Time elapsed on processsing: 14.224852700000003s
+
+Reading image X02.jpg
+Time elapsed on processsing: 0.4726768000000021s
+
+Reading image X03.jpg
+Time elapsed on processsing: 0.5799457999999973s
+
+Reading image X04.jpg
+Time elapsed on processsing: 0.46787159999999517s
+
+Reading image X05.jpg
+Time elapsed on processsing: 0.4623930999999999s
+
+Reading image X06.jpg
+Time elapsed on processsing: 0.4371415999999968s
+
+Reading image X07.jpg
+Time elapsed on processsing: 0.47175539999999927s
+
+Reading image X08.jpg
+Time elapsed on processsing: 0.4258954000000017s
+
+Reading image X09.jpg
+Time elapsed on processsing: 0.4349283000000028s
+
+Reading image X10.jpg
+Time elapsed on processsing: 0.4173410000000004s
+
+Reading image X11.jpg
+Time elapsed on processsing: 0.4280358999999976s
+
+Reading image X12.jpg
+Time elapsed on processsing: 0.4169982000000019s
+
+Reading image X13.jpg
+Time elapsed on processsing: 0.4150660999999971s
+
+Reading image X14.jpg
+Time elapsed on processsing: 0.4098153999999994s
+
+Reading image X15.jpg
+Time elapsed on processsing: 3.3559800000000024s
+
+Reading image X16.jpg
+Time elapsed on processsing: 8.911448100000001s
+
+Reading image X17.jpg
+Time elapsed on processsing: 7.956793099999999s
+
+Reading image X18.jpg
+Time elapsed on processsing: 10.279845100000003s
+
+Reading image X19.jpg
+Time elapsed on processsing: 41.35220609999999s
+
+Reading image X20.jpg
+Time elapsed on processsing: 0.42223690000000147s
+
+Reading image X21.jpg
+Time elapsed on processsing: 0.42947550000000945s
+
+Reading image X22.jpg
+Time elapsed on processsing: 19.40506400000001s
+
+Reading image X23.jpg
+Time elapsed on processsing: 0.44228689999999915s
+
+Reading image X24.jpg
+Time elapsed on processsing: 0.45257620000001s
+
+Reading image X25.jpg
+Time elapsed on processsing: 0.5355823000000157s
+
+Reading image X26.jpg
+Time elapsed on processsing: 0.4675824999999918s
+
+Reading image X27.jpg
+Time elapsed on processsing: 553.3277353000001s
+
+Reading image X28.jpg
+Time elapsed on processsing: 0.34683769999992364s
+
+Reading image X29.jpg
+Time elapsed on processsing: 102.22996879999994s
+
+Reading image X30.jpg
+Time elapsed on processsing: 0.33474499999999807s
+
+Reading image X31.jpg
+Time elapsed on processsing: 359.4103241s
+
+Reading image X32.jpg
+Time elapsed on processsing: 0.37703659999988304s
+
+Reading image X33.jpg
+Time elapsed on processsing: 19.46091690000003s
+
+Reading image X34.jpg
+Time elapsed on processsing: 38.94274879999989s
+
+Reading image X35.jpg
+Time elapsed on processsing: 0.35206349999998565s
+
+Reading image X36.jpg
+Time elapsed on processsing: 0.37358449999987897s
+
+Reading image X37.jpg
+Time elapsed on processsing: 0.37869099999988975s
+
+Reading image X38.jpg
+Time elapsed on processsing: 0.3588651000000027s
+
+Reading image X39.jpg
+Time elapsed on processsing: 0.3823993999999402s
+
+Reading image X40.jpg
+Time elapsed on processsing: 0.3930562000000464s
+
+Reading image X41.jpg
+Time elapsed on processsing: 38.82102729999997s
+
+Reading image X42.jpg
+Time elapsed on processsing: 0.35156240000014805s
+
+Reading image X43.jpg
+Time elapsed on processsing: 0.38012849999995524s
+
+Reading image X44.jpg
+Time elapsed on processsing: 0.3765571999999793s
+
+Reading image X45.jpg
+Time elapsed on processsing: 275.1530954000002s
+
+Reading image X46.jpg
+Time elapsed on processsing: 19.569616900000028s
+
+Reading image X47.jpg
+Time elapsed on processsing: 0.3674828000000616s
+
+Reading image X48.jpg
+Time elapsed on processsing: 0.384324099999958s
+
+Reading image X49.jpg
+Time elapsed on processsing: 24.356965400000036s
+Chessboard pattern found in 46 out of 50 photos
+
+Return value:
+0.7240338001473453
+
+Camera intrinsic parameters matrix:
+array([[2.42286902e+03, 0.00000000e+00, 1.54592040e+03],
+       [0.00000000e+00, 2.42857228e+03, 1.14231961e+03],
+       [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]])
+
+Distortion coefficients:
+array([[ 0.17390711, -0.63224477, -0.00192793, -0.00256653,  0.59513868]])
+
+Rotation vectors:
+[array([[ 0.77997033],
+       [ 0.52583882],
+       [-2.94194191]]),
+ array([[ 0.00415236],
+       [-0.00722541],
+       [ 3.10091421]]),
+ array([[-0.05310587],
+       [-0.58442849],
+       [ 3.07779116]]),
+ array([[ 0.07249628],
+       [ 1.13343108],
+       [-2.90967778]]),
+ array([[ 1.09471121],
+       [ 0.912472  ],
+       [-2.47808618]]),
+ array([[-0.58569525],
+       [ 1.42757481],
+       [ 2.49105044]]),
+ array([[-0.22705081],
+       [ 0.1139321 ],
+       [ 3.11113146]]),
+ array([[-0.09124497],
+       [-0.54003644],
+       [ 3.07640616]]),
+ array([[-0.88769533],
+       [ 0.92650632],
+       [ 2.5478085 ]]),
+ array([[-0.98212589],
+       [ 1.11710875],
+       [ 2.27925618]]),
+ array([[ 0.99192487],
+       [ 0.59353565],
+       [-2.76688264]]),
+ array([[-0.37326297],
+       [-0.19123328],
+       [ 3.08799761]]),
+ array([[ 0.63680026],
+       [ 1.03045453],
+       [-2.52389387]]),
+ array([[ 0.45662397],
+       [ 0.66808355],
+       [-2.76079879]]),
+ array([[-0.90438912],
+       [ 0.57016594],
+       [ 2.73770636]]),
+ array([[-0.22381609],
+       [-0.2020644 ],
+       [ 3.12564273]]),
+ array([[-0.31856881],
+       [ 0.15636275],
+       [-3.11367598]]),
+ array([[ 1.02109299],
+       [ 0.21191326],
+       [-2.91240148]]),
+ array([[ 0.37538873],
+       [ 0.48472097],
+       [-0.79036114]]),
+ array([[ 1.02501543],
+       [ 1.06831877],
+       [-1.62490159]]),
+ array([[ 0.11834311],
+       [ 0.93891104],
+       [-0.12922647]]),
+ array([[-0.02144192],
+       [ 0.75554548],
+       [-0.71808559]]),
+ array([[ 0.0615942 ],
+       [ 1.23481965],
+       [-0.31601064]]),
+ array([[-1.04217867],
+       [ 0.95422206],
+       [ 2.4618776 ]]),
+ array([[-0.51013162],
+       [ 1.2718884 ],
+       [ 2.67463556]]),
+ array([[ 1.00819908],
+       [ 1.04913113],
+       [-2.1596133 ]]),
+ array([[ 1.01675302],
+       [ 0.81278511],
+       [-1.8472066 ]]),
+ array([[ 1.24567373],
+       [ 0.55857169],
+       [-2.55877215]]),
+ array([[ 1.36278573],
+       [-0.1283859 ],
+       [-2.81942679]]),
+ array([[-1.15609647],
+       [ 0.93385968],
+       [ 2.46802161]]),
+ array([[-0.20792467],
+       [-0.81940339],
+       [ 2.97663722]]),
+ array([[-0.10525182],
+       [-0.41912815],
+       [ 3.08232035]]),
+ array([[ 0.10408336],
+       [ 0.03054714],
+       [-3.13489101]]),
+ array([[-0.02518385],
+       [ 0.6443066 ],
+       [ 3.06292739]]),
+ array([[-0.12675697],
+       [ 0.85871982],
+       [ 2.87064345]]),
+ array([[-0.1611408 ],
+       [ 1.28270347],
+       [ 2.71256142]]),
+ array([[ 0.60058599],
+       [ 0.79971647],
+       [-2.76209431]]),
+ array([[ 1.09116563],
+       [ 0.60121263],
+       [-2.54548354]]),
+ array([[ 1.2641398 ],
+       [ 0.7263241 ],
+       [-2.53740025]]),
+ array([[-1.05262271],
+       [ 0.12833885],
+       [ 2.89775499]]),
+ array([[-0.78581918],
+       [ 1.13029943],
+       [ 2.50473394]]),
+ array([[-0.24011567],
+       [-0.52223545],
+       [-3.0618966 ]]),
+ array([[-0.11583913],
+       [-0.3804277 ],
+       [-3.08909863]]),
+ array([[-1.22831992],
+       [ 1.13680142],
+       [ 1.97582497]]),
+ array([[ 0.69226289],
+       [ 1.10206396],
+       [-2.4056547 ]]),
+ array([[-0.05206872],
+       [ 0.88260637],
+       [-3.00288552]])]
+
+Translation vectors:
+[array([[0.14727167],
+       [0.11137627],
+       [0.67925447]]),
+ array([[0.11808885],
+       [0.0743206 ],
+       [0.47526851]]),
+ array([[0.09736238],
+       [0.13066855],
+       [0.57337818]]),
+ array([[0.08567832],
+       [0.08948245],
+       [0.48775899]]),
+ array([[0.06114847],
+       [0.05325507],
+       [0.55478622]]),
+ array([[0.11919981],
+       [0.05778668],
+       [0.47383799]]),
+ array([[-0.07920136],
+       [ 0.10052138],
+       [ 1.28887323]]),
+ array([[0.05164756],
+       [0.07141751],
+       [1.27189828]]),
+ array([[-0.06441569],
+       [ 0.0882031 ],
+       [ 0.97204601]]),
+ array([[0.10320309],
+       [0.04132878],
+       [0.63110201]]),
+ array([[-0.54084933],
+       [-0.11375949],
+       [ 1.58870189]]),
+ array([[0.32771237],
+       [0.41466362],
+       [1.68320501]]),
+ array([[0.0579475 ],
+       [0.03194094],
+       [1.28385391]]),
+ array([[0.07155206],
+       [0.08448508],
+       [1.91333363]]),
+ array([[0.07992584],
+       [0.06802081],
+       [1.93233161]]),
+ array([[0.03347195],
+       [0.07414016],
+       [0.3842616 ]]),
+ array([[0.18071791],
+       [0.0734641 ],
+       [0.46107033]]),
+ array([[-0.01253033],
+       [ 0.09053238],
+       [ 0.46849839]]),
+ array([[-0.11375465],
+       [ 0.04366899],
+       [ 0.4913449 ]]),
+ array([[-0.06534575],
+       [ 0.04070151],
+       [ 0.52106319]]),
+ array([[-0.14772664],
+       [-0.04505672],
+       [ 0.64173072]]),
+ array([[0.05554588],
+       [0.09145143],
+       [1.91124077]]),
+ array([[0.08939709],
+       [0.01623697],
+       [1.35790457]]),
+ array([[0.07366055],
+       [0.07163819],
+       [1.66308413]]),
+ array([[0.12935075],
+       [0.05078664],
+       [0.31566962]]),
+ array([[-0.14574058],
+       [ 0.07092314],
+       [ 0.7513438 ]]),
+ array([[-0.01396565],
+       [ 0.10938171],
+       [ 0.43077648]]),
+ array([[0.23740632],
+       [0.07636743],
+       [1.10431283]]),
+ array([[0.28152964],
+       [0.1055179 ],
+       [1.090977  ]]),
+ array([[0.29111142],
+       [0.18005315],
+       [1.11902975]]),
+ array([[0.00392638],
+       [0.06574929],
+       [1.02116795]]),
+ array([[0.05108607],
+       [0.03106743],
+       [0.91628247]]),
+ array([[0.04284107],
+       [0.02786509],
+       [0.91761153]]),
+ array([[0.08361356],
+       [0.11097781],
+       [0.89063002]]),
+ array([[ 0.01346344],
+       [-0.01709161],
+       [ 0.71274755]]),
+ array([[ 0.01774139],
+       [-0.02057484],
+       [ 0.52984314]]),
+ array([[0.07679921],
+       [0.11167663],
+       [1.44101825]]),
+ array([[-0.28077526],
+       [ 0.20358937],
+       [ 1.48968139]]),
+ array([[-0.17704597],
+       [ 0.09650001],
+       [ 1.59931439]]),
+ array([[0.02770884],
+       [0.16053104],
+       [1.9377235 ]]),
+ array([[0.59380323],
+       [0.10870251],
+       [1.30392452]]),
+ array([[ 0.17538179],
+       [-0.08907714],
+       [ 0.62253528]]),
+ array([[ 0.13132389],
+       [-0.07263332],
+       [ 0.61391907]]),
+ array([[0.04296678],
+       [0.06060049],
+       [0.54951903]]),
+ array([[0.07775007],
+       [0.09363844],
+       [0.94888448]]),
+ array([[0.09738207],
+       [0.09078475],
+       [0.32018933]])]

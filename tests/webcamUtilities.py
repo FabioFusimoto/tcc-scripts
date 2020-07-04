@@ -12,3 +12,11 @@ def testPhotoCapture():
 def testPhotoSave(filename='test.jpg'):
     print('It should take a picture and save it')
     print('Success? -> ' + str(photo.savePhoto(filename)))
+
+def multiplePhotoSave(path, prefix, extension, count):
+    print('It should take multiples pictures and save')
+    input('Press ENTER key to start\n')
+    photo.saveMultiple(path, prefix, extension, count)
+
+# testPhotoSave(filename='images/for-calibration/Z100-02.jpg')
+# multiplePhotoSave('images/for-calibration', 'X', 'jpg', 50)
