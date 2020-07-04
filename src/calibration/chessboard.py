@@ -134,3 +134,54 @@ def drawOnChessboard(sourceFile, outputFile, axisLength, cameraMatrix, distortio
         cv2.imwrite(outputFile, imageWithAxis)
     
     cv2.destroyAllWindows()
+
+def getPositionVectors(sourceFile, cameraMatrix, distortionCoeffs, squareSize=1, width=9, height=6, scale=1.0):
+    objectPoints = np.zeros((height*width, 3), np.float32)
+    objectPoints[:, :2] = np.mgrid[0:width, 0:height].T.reshape(-1, 2)
+
+    sourceImage = cv2.imread(sourceFile)
+    sourceImage = cv2.resize(sourceImage, None, fx=scale, fy=scale)
+
+    grayImage = cv2.cvtColor(sourceImage, cv2.COLOR_BGR2GRAY)
+
+    flags = cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_NORMALIZE_IMAGE
+    found, corners = cv2.findChessboardCorners(grayImage, (width, height), flags)
+
+    if found:
+        refinedCorners = cv2.cornerSubPix(grayImage, corners, (11,11), (-1, -1), criteria)
+
+        # Find the rotation and translation vectors
+        _, rotVectors, traVectors, _ = cv2.solvePnPRansac(objectPoints, refinedCorners, cameraMatrix, distortionCoeffs)
+
+        return rotVectors, traVectors  * squareSize
+    else:
+        return [], []
+
+def drawPositionVectors(sourceFile, outputFile, cameraMatrix, distortionCoeffs, squareSize=1, width=9, height=6, scale=1.0):
+    rotVectors, traVectors = getPositionVectors(sourceFile, cameraMatrix, distortionCoeffs, squareSize, width, height, scale)
+    
+    rotX, rotY, rotZ = rotVectors
+    traX, traY, traZ = traVectors
+
+    sourceImage = cv2.imread(sourceFile)
+    sourceImage = cv2.resize(sourceImage, None, fx=scale, fy=scale)
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    initialPosition = (10,100)
+    positionIncrement = 50
+    scale = 1
+    color = (255,0,0)
+    thickness = 1
+
+    coordNames = ['Rotation X: ', 'Rotation Y: ', 'Rotation Z: ',
+                  'Translation X: ', 'Translation Y: ', 'Translation Z: ']
+    coords = [rotX[0], rotY[0], rotZ[0], traX[0], traY[0], traZ[0]]
+
+    for i in range(len(coords)):
+        position = (initialPosition[0], initialPosition[1] + i * positionIncrement)
+        cv2.putText(sourceImage, coordNames[i] + str(coords[i]), position, font, scale, color, thickness, cv2.LINE_AA)
+
+    cv2.imshow('Position vectors', cv2.resize(sourceImage, None, fx=0.5, fy=0.5))
+    cv2.waitKey(0)
+
+    cv2.imwrite(outputFile, sourceImage)

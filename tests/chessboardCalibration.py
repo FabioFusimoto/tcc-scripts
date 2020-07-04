@@ -2,7 +2,7 @@ import pprint
 
 import src.calibration.chessboard as chess
 
-def getCoefficients(imgSrcPath, imgOutPath, imgPrefix, imgFormat, sqrSize, boardWidth, boardHeight, downsize, scale):
+def getCoefficients(imgSrcPath, imgOutPath, imgPrefix, imgFormat, sqrSize, boardWidth, boardHeight, downsize, scale, calibrationFilename):
     '''Calculates the calibration coefficients, prints them and stores them as a YML file'''
     ret, mtx, dist, rvecs, tvecs = chess.calibrate(imgSrcPath, imgOutPath, imgPrefix, imgFormat, sqrSize,
                                                    boardWidth, boardHeight, downsize, scale)
@@ -23,9 +23,7 @@ def getCoefficients(imgSrcPath, imgOutPath, imgPrefix, imgFormat, sqrSize, board
     pprint.pprint(tvecs)
 
     # Saving the calibration coefficients
-    scaleAsString = str(scale * 100).split('.')[0]
-    filename = 'tests/calibration-coefficients/g7-play-' + scaleAsString + '-percent-resolution.yml'
-    chess.saveCalibrationCoeficients(mtx, dist, filename)
+    chess.saveCalibrationCoeficients(mtx, dist, calibrationFilename)
 
 def undistortImage(imageSource, imageOutput, calibrationFile, scale):
     '''Undistorts image based on a calibration file. The calibration is resolution sensitive,
@@ -41,10 +39,32 @@ def drawAxisOnChessboardImage(imageSource, imageOutput, axisLength, calibrationF
     chess.drawOnChessboard(imageSource, imageOutput, axisLength, cameraMatrix, distortionCoefficients,
                            width, height, scale)
 
-# getCoefficients('images/for-calibration', 'images/calibration-output', 'C', 'jpg', 17.85 / 6, 9, 6, True, 0.25)
+def findChessboardCoordinates(imageSource, calibrationFile, squareSize, width, height, scale):
+    cameraMatrix, distortionCoefficients = chess.loadCalibrationCoeficients(calibrationFile)
+    rotationVectors, translationVectors = chess.getPositionVectors(imageSource, cameraMatrix, distortionCoefficients,
+                                                                   squareSize, width, height, scale)
+    
+    print('\nRotation vectors:')
+    pprint.pprint(rotationVectors)
+
+    print('\nTranslation vectors:')
+    pprint.pprint(translationVectors)
+
+def drawPositionVectors(imageSource, imageOutput, calibrationFile, squareSize, width, height, scale):
+    cameraMatrix, distortionCoefficients = chess.loadCalibrationCoeficients(calibrationFile)
+    chess.drawPositionVectors(imageSource, imageOutput, cameraMatrix, distortionCoefficients, squareSize, width, height, scale)
+
+# getCoefficients('images/for-calibration', 'images/calibration-output', 'X', 'jpg', 0.228/9, 9, 6, True, 0.75,
+#                 'tests/calibration-coefficients/g7-play-X-75-percent-resolution.yml') # measured 22.8cm - 9 squares
 
 # undistortImage('images/for-calibration/C11.jpg', 'images/calibration-output/C11-undistorted.jpg', 
-  #              'tests/calibration-coefficients/g7-play-75-percent-resolution.yml', 0.75)
+#                'tests/calibration-coefficients/g7-play-75-percent-resolution.yml', 0.75)
 
-drawAxisOnChessboardImage('images/for-calibration/C11.jpg', 'images/calibration-output/C11-axis.jpg', 2,
-                          'tests/calibration-coefficients/g7-play-75-percent-resolution.yml', 9, 6 , 0.75)
+# drawAxisOnChessboardImage('images/for-calibration/C11.jpg', 'images/calibration-output/C11-axis.jpg', 2,
+#                           'tests/calibration-coefficients/g7-play-75-percent-resolution.yml', 9, 6 , 0.75)
+
+# findChessboardCoordinates('images/for-calibration/D100cm.jpg', 'tests/calibration-coefficients/g7-play-100-percent-resolution.yml',
+#                           0.228/9, 9, 6, 1.0) # measured 22.8cm - 9 squares
+
+drawPositionVectors('images/for-calibration/Z100-00.jpg', 'images/calibration-output/Z100-00-coords.jpg',
+                    'tests/calibration-coefficients/g7-play-X-75-percent-resolution.yml', 0.228/9, 9, 6, 0.75)
