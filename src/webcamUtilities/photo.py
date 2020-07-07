@@ -2,6 +2,7 @@ import time
 
 import cv2.cv2 as cv2
 
+from src.utilities import rotateImages
 from .constants import BASE_URL, PHOTO_ENDPOINT
 from .commons import imageArrayFromURL, decodedImageFromURL
 
@@ -15,9 +16,11 @@ def takePicture():
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-def savePhoto(filename):
+def savePhoto(filename, rotationType=None):
     img = decodedImageFromURL(BASE_URL + PHOTO_ENDPOINT)
 
+    if(rotationType is not None):
+        img = rotateImages.rotateImage(img, rotationType, filename, False)
     return cv2.imwrite(filename, img, [cv2.IMWRITE_JPEG_QUALITY, 100])
 
 

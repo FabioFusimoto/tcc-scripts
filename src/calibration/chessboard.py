@@ -17,7 +17,7 @@ def getCorners(sourceImage, width, height):
     grayImage = cv2.cvtColor(sourceImage, cv2.COLOR_BGR2GRAY)
     return cv2.findChessboardCorners(grayImage, (width, height), flags)
 
-def calibrate(sourcePath, outputPath, prefix, imageFormat, squareSize, width=9, height=6, scale=0.5):
+def calibrate(sourcePath, outputPath, prefix, imageFormat, squareSize, width, height, scale):
     """Calibrates camera parameters for chessboard images on the given path"""
 
     # Creating a matrix of points to map
@@ -39,18 +39,19 @@ def calibrate(sourcePath, outputPath, prefix, imageFormat, squareSize, width=9, 
         start = timer()
 
         photo = getImageAndResize(f, scale)
+        grayPhoto = cv2.cvtColor(photo, cv2.COLOR_BGR2GRAY)
 
         print('\nReading image ' + str(f).split('\\')[1])
 
         # Find the chessboards corners
-        patternWasFound, corners = getCorners(photo, height, width)
+        patternWasFound, corners = getCorners(photo, width, height)
 
         # If the corners were found, add them to 3D and 2D points arrays
         if patternWasFound:
             chessboardCornersFound += 1
             pointsInSpace.append(objectPoints)
 
-            refinedCorners = cv2.cornerSubPix(photo, corners, (11, 11), (-1, -1), criteria)
+            refinedCorners = cv2.cornerSubPix(grayPhoto, corners, (11, 11), (-1, -1), criteria)
             pointsInPlane.append(refinedCorners)
 
             # Save the photos with the corners drawn, if found
@@ -65,7 +66,7 @@ def calibrate(sourcePath, outputPath, prefix, imageFormat, squareSize, width=9, 
     print('Chessboard pattern found in ' + str(chessboardCornersFound) + ' out of ' + str(len(photoFiles)) + ' photos')
 
     # Calibrating the camera using the planar and spacial points found
-    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(pointsInSpace, pointsInPlane, photo.shape[::-1], None, None)
+    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(pointsInSpace, pointsInPlane, grayPhoto.shape[::-1], None, None)
     return ret, mtx, dist, rvecs, tvecs
 
 def saveCalibrationCoeficients(mtx, dist, path):
