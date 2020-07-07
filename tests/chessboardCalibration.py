@@ -1,4 +1,5 @@
 import pprint
+import glob
 
 import src.calibration.chessboard as chess
 
@@ -36,23 +37,20 @@ def drawPositionVectors(imageSource, imageOutput, calibrationFile, squareSize, w
     cameraMatrix, distortionCoefficients = chess.loadCalibrationCoeficients(calibrationFile)
     chess.drawPositionVectors(imageSource, imageOutput, cameraMatrix, distortionCoefficients, squareSize, width, height, scale)
 
-# getCoefficients('images/for-calibration', 'images/calibration-output', 'X', 'jpg', 0.228/9, 9, 6, 0.75,
+# getCoefficients('images/for-calibration', 'images/calibration-output', 'X', 'jpg', 0.228/9, 6, 9, 0.75,
 #                 'tests/calibration-coefficients/g7-play-X-75-percent-resolution.yml') # measured 22.8cm - 9 squares
 
 # undistortImage('images/for-calibration/C11.jpg', 'images/calibration-output/C11-undistorted.jpg', 
 #                'tests/calibration-coefficients/g7-play-75-percent-resolution.yml', 0.75)
 
 # findChessboardCoordinates('images/for-calibration/D100cm.jpg', 'tests/calibration-coefficients/g7-play-100-percent-resolution.yml',
-#                           0.228/9, 9, 6, 1.0) # measured 22.8cm - 9 squares
+#                           0.228/9, 6, 9, 1.0) # measured 22.8cm - 9 squares
 
-poseCalibImages = ['Z50-00', 'Z50-01', 'Z50-02','Z75-00','Z75-01','Z75-02','Z100-00','Z100-01','Z100-02']
+poseCalibImages = glob.glob('images/for-calibration/Z*.jpg')
 calibrationFile = 'tests/calibration-coefficients/g7-play-X-75-percent-resolution.yml'
 
 for img in poseCalibImages:
-    print('\nEstimating pose on ' + img)
-    inputFolder = 'images/for-calibration/'
-    outputFolder = 'images/calibration-output/'
-    extension = '.jpg'
-    outputFile = outputFolder + img + '-coords' + extension
-    drawPositionVectors(inputFolder + img + extension, outputFile, 
-                        calibrationFile, 0.228/9, 9, 6, 0.75)
+    print('\nEstimating pose on ' + img.split('\\')[-1])
+    outputFile = 'images/calibration-output/' + img.split('\\')[-1].split('.')[0] + '-coords.jpg'
+    print('Saving coordinates to ' + outputFile)
+    drawPositionVectors(img, outputFile, calibrationFile, 0.228/9, 6, 9, 0.75)
