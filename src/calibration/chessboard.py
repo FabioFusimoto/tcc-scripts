@@ -1,12 +1,21 @@
 from timeit import default_timer as timer
 
 import cv2.cv2 as cv2
+import math
 import numpy as np
 import glob
 import pprint
 
+from src.calibration.commons import rotationMatrixToEulerAngles
+
 # termination criteria
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+
+# Rotation flip correction (to align camera and board axis)
+RFlip = np.zeros((3,3), dtype=np.float32)
+RFlip[0,0] = -1.0
+RFlip[1,1] = -1.0
+RFlip[2,2] = -1.0
 
 def getImageAndResize(sourceFile, scale):
     sourceImage = cv2.imread(sourceFile)
@@ -135,7 +144,9 @@ def drawPositionVectors(sourceFile, outputFile, cameraMatrix, distortionCoeffs, 
     if found:
         rotVectors, traVectors, _ = getPositionVectors(sourceImage, corners, cameraMatrix, distortionCoeffs, width, height)
     
-        rotX, rotY, rotZ = rotVectors
+        rMatrix = np.matrix(cv2.Rodrigues(rotVectors)[0])
+        roll, pitch, yaw = rotationMatrixToEulerAngles(RFlip*rMatrix)
+
         traX, traY, traZ = traVectors
 
         font = cv2.FONT_HERSHEY_SIMPLEX
@@ -145,19 +156,16 @@ def drawPositionVectors(sourceFile, outputFile, cameraMatrix, distortionCoeffs, 
         color = (0,0,0)
         thickness = 1
 
-        coordNames = ['Rotation X: ', 'Rotation Y: ', 'Rotation Z: ',
-                     'Translation X: ', 'Translation Y: ', 'Translation Z: ']
+        coordNames = ['Roll: ', 'Pitch: ', 'Yaw: ', 'Tra X: ', 'Tra Y: ', 'Tra Z: ']
 
-        # *(180/pi) to convert from radians to degrees
         # *squareSize to convert from squareCount to meters
-        coords = [rotX[0] * (180/np.pi), rotY[0] * (180/np.pi), rotZ[0] * (180/np.pi),
-                  traX[0]  * squareSize, traY[0]  * squareSize, traZ[0]  * squareSize]
+        coords = [math.degrees(roll), math.degrees(pitch), math.degrees(yaw), traX[0] * squareSize, traY[0] * squareSize, traZ[0] * squareSize]
 
         for i in range(len(coords) + 3):
             position = (initialPosition[0], initialPosition[1] + i * positionIncrement)
             if(i < len(coords)):
                 cv2.putText(sourceImage, coordNames[i] + str(coords[i]), position, font, scale, color, thickness, cv2.LINE_AA)
-            if(i == len(coords)):
+            elif(i == len(coords)):
                 cv2.putText(sourceImage, '+X axis: Blue', position, font, scale, (255, 0, 0), thickness, cv2.LINE_AA)
             elif(i == (len(coords) + 1)):
                 cv2.putText(sourceImage, '+Y axis: Green', position, font, scale, (0, 255, 0), thickness, cv2.LINE_AA)
