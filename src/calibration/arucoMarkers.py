@@ -1,10 +1,10 @@
-from timeit import default_timer as timer
-
+import csv
 import cv2.cv2 as cv2
 import math
 import numpy as np
 import glob
 import pprint
+from timeit import default_timer as timer
 
 from src.calibration.commons import rotationMatrixToEulerAngles
 
@@ -58,31 +58,36 @@ def highlightDetectedMarkers(sourceFile, outputFile, shouldSave, scale):
     if shouldSave:
         cv2.imwrite(outputFile, sourceImage)
 
+def getPositionVectors(sourceImage, markerLength, cameraMatrix, distCoeffs):
+    corners, idsFound, _ = getCorners(sourceImage)
+    rVecs, tVecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, markerLength, cameraMatrix, distCoeffs)    
+    idsFound = np.array([x[0] for x in idsFound])    
+    return idsFound, rVecs, tVecs
+
+def calculateCoordinates(rVecs, tVecs):
+    # Converting the rVector into Euler angles
+    rMatrix = np.matrix(cv2.Rodrigues(rVecs)[0])
+    roll, pitch, yaw = rotationMatrixToEulerAngles(RFlip*rMatrix) # Flipping before converting
+    traX, traY, traZ = tVecs[0]
+
+    return [math.degrees(roll), math.degrees(pitch), math.degrees(yaw), traX, traY, traZ]
+
 def estimatePose(sourceFile, outputFile, scale, markerId, markerLength, cameraMatrix, distCoeffs):
     sourceImage = getImageAndResize(sourceFile, scale)
     
     start = timer()
-    
-    corners, ids, _ = getCorners(sourceImage)
-    rVecs, tVecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, markerLength, cameraMatrix, distCoeffs)
-
+    ids, rVecs, tVecs = getPositionVectors(sourceImage, markerLength, cameraMatrix, distCoeffs)
     end = timer()
-
     print('Time elapsed to estimate pose: ' + '%3fms' % ((end - start) * 1000))
 
-    if ids is not None:
-        i = np.where(ids == markerId)[0][0]
+    indexes = np.where(ids == markerId)[0]
 
+    if indexes.size > 0:
+        i = indexes[0]
         cv2.aruco.drawAxis(sourceImage, cameraMatrix, distCoeffs, rVecs[i], tVecs[i], markerLength/2)
 
-        # Converting the rVector into Euler angles
-        rMatrix = np.matrix(cv2.Rodrigues(rVecs[i])[0])
-        roll, pitch, yaw = rotationMatrixToEulerAngles(RFlip*rMatrix) # Flipping before converting
-
-        traX, traY, traZ = tVecs[i][0]
-
         coordNames = ['Roll: ', 'Pitch: ', 'Yaw: ', 'Tra X: ', 'Tra Y: ', 'Tra Z: ']
-        coords = [math.degrees(roll), math.degrees(pitch), math.degrees(yaw), traX, traY, traZ]
+        coords = calculateCoordinates(rVecs[i], tVecs[i])
 
         font = cv2.FONT_HERSHEY_SIMPLEX
         initialPosition = (10,100)
@@ -107,5 +112,25 @@ def estimatePose(sourceFile, outputFile, scale, markerId, markerLength, cameraMa
         #cv2.destroyAllWindows()
 
         cv2.imwrite(outputFile, sourceImage)
+
+        return coords
+
     else:
-        print('No markers were found')
+        print('Marker with ID = ' + str(markerId) + ' was not found')
+
+def exportCoordinatesToFile(sourceFile, outputFile, scale, markerId, markerLength, cameraMatrix, distCoeffs):
+    sourceImage = getImageAndResize(sourceFile, scale)
+    ids, rVecs, tVecs = getPositionVectors(sourceImage, markerLength, cameraMatrix, distCoeffs)
+
+    indexes = np.where(ids == markerId)[0]
+
+    if indexes.size > 0:
+        i = indexes[0]
+        coords = calculateCoordinates(rVecs[i], tVecs[i])
+        coords.insert(0, markerId)
+
+        with open(outputFile, mode='a') as coordsFile:
+            writer = csv.writer(coordsFile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(coords)
+    else:
+        print('Marker with ID = ' + str(markerId) + ' was not found')
