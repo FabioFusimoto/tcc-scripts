@@ -6,7 +6,7 @@ import numpy as np
 import glob
 import pprint
 
-from src.calibration.commons import rotationMatrixToEulerAngles
+from src.calibration.commons import rotationMatrixToEulerAngles, getImageAndResize, saveCalibrationCoeficients, loadCalibrationCoeficients, calculateCoordinates 
 
 # termination criteria
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -16,10 +16,6 @@ RFlip = np.zeros((3,3), dtype=np.float32)
 RFlip[0,0] = -1.0
 RFlip[1,1] = -1.0
 RFlip[2,2] = -1.0
-
-def getImageAndResize(sourceFile, scale):
-    sourceImage = cv2.imread(sourceFile)
-    return cv2.resize(sourceImage, None, fx=scale, fy=scale)
 
 def getCorners(sourceImage, width, height):
     flags = cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_NORMALIZE_IMAGE
@@ -78,23 +74,6 @@ def calibrate(sourcePath, outputPath, prefix, imageFormat, squareSize, width, he
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(pointsInSpace, pointsInPlane, grayPhoto.shape[::-1], None, None)
     return ret, mtx, dist, rvecs, tvecs
 
-def saveCalibrationCoeficients(mtx, dist, path):
-    """Save the camera matrix and the distortion coefficients to a given file"""
-    cvFileHandler = cv2.FileStorage(path, flags=1)
-    cvFileHandler.write("K", mtx)
-    cvFileHandler.write("D", dist)
-    cvFileHandler.release()
-
-def loadCalibrationCoeficients(path):
-    """Loads camera matrix and distortion coefficients from path"""
-    cvFileHandler = cv2.FileStorage(path, cv2.FILE_STORAGE_READ)
-
-    cameraMatrix = cvFileHandler.getNode("K").mat()
-    distortionCoefficients = cvFileHandler.getNode("D").mat()
-
-    cvFileHandler.release()
-    return [cameraMatrix, distortionCoefficients]
-
 def undistortImage(sourceImage, outputFile, cameraMatrix, distortionCoeffs, scale=1.0):
     h, w = sourceImage.shape[:2] # scaled image resolution - height x width
     newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(cameraMatrix, distortionCoeffs, (w, h), 1, (w, h))
@@ -143,28 +122,21 @@ def drawPositionVectors(sourceFile, outputFile, cameraMatrix, distortionCoeffs, 
 
     if found:
         rotVectors, traVectors, _ = getPositionVectors(sourceImage, corners, cameraMatrix, distortionCoeffs, width, height)
-    
-        rMatrix = np.matrix(cv2.Rodrigues(rotVectors)[0])
-        roll, pitch, yaw = rotationMatrixToEulerAngles(RFlip*rMatrix)
 
-        traX, traY, traZ = traVectors
+        coordNames = ['Roll: ', 'Pitch: ', 'Yaw: ', 'Tra X: ', 'Tra Y: ', 'Tra Z: ']
+        coords = calculateCoordinates(rotVectors, traVectors, RFlip, scale=squareSize)
 
         font = cv2.FONT_HERSHEY_SIMPLEX
         initialPosition = (10,100)
         positionIncrement = 50
-        scale = 1
+        scale = 1.5
         color = (0,0,0)
-        thickness = 1
-
-        coordNames = ['Roll: ', 'Pitch: ', 'Yaw: ', 'Tra X: ', 'Tra Y: ', 'Tra Z: ']
-
-        # *squareSize to convert from squareCount to meters
-        coords = [math.degrees(roll), math.degrees(pitch), math.degrees(yaw), traX[0] * squareSize, traY[0] * squareSize, traZ[0] * squareSize]
+        thickness = 2
 
         for i in range(len(coords) + 3):
             position = (initialPosition[0], initialPosition[1] + i * positionIncrement)
             if(i < len(coords)):
-                cv2.putText(sourceImage, coordNames[i] + str(coords[i]), position, font, scale, color, thickness, cv2.LINE_AA)
+                cv2.putText(sourceImage, coordNames[i] + '%.3f' % coords[i], position, font, scale, color, thickness, cv2.LINE_AA)
             elif(i == len(coords)):
                 cv2.putText(sourceImage, '+X axis: Blue', position, font, scale, (255, 0, 0), thickness, cv2.LINE_AA)
             elif(i == (len(coords) + 1)):
