@@ -1,3 +1,4 @@
+import cv2.cv2 as cv2
 import math
 import numpy as np
 
@@ -25,3 +26,36 @@ def rotationMatrixToEulerAngles(R) :
         z = 0
 
     return np.array([x, y, z])
+
+def getImageAndResize(sourceFile, scale):
+    sourceImage = cv2.imread(sourceFile)
+    return cv2.resize(sourceImage, None, fx=scale, fy=scale)
+
+def calculateCoordinates(rVecs, tVecs, RFlip, scale=None):
+    # Converting the rVector into Euler angles
+    rMatrix = np.matrix(cv2.Rodrigues(rVecs)[0])
+    roll, pitch, yaw = rotationMatrixToEulerAngles(RFlip*rMatrix) # Flipping before converting
+    traX, traY, traZ = tVecs
+
+    if scale is None:
+        return [math.degrees(roll), math.degrees(pitch), math.degrees(yaw), traX[0], traY[0], traZ[0]]
+    else:
+        return [math.degrees(roll), math.degrees(pitch), math.degrees(yaw), 
+                traX[0] * scale, traY[0] * scale, traZ[0] * scale]
+
+def saveCalibrationCoeficients(mtx, dist, path):
+    """Save the camera matrix and the distortion coefficients to a given file"""
+    cvFileHandler = cv2.FileStorage(path, flags=1)
+    cvFileHandler.write("K", mtx)
+    cvFileHandler.write("D", dist)
+    cvFileHandler.release()
+
+def loadCalibrationCoeficients(path):
+    """Loads camera matrix and distortion coefficients from path"""
+    cvFileHandler = cv2.FileStorage(path, cv2.FILE_STORAGE_READ)
+
+    cameraMatrix = cvFileHandler.getNode("K").mat()
+    distortionCoefficients = cvFileHandler.getNode("D").mat()
+
+    cvFileHandler.release()
+    return [cameraMatrix, distortionCoefficients]

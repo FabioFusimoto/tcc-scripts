@@ -1,12 +1,12 @@
-from timeit import default_timer as timer
-
+import csv
 import cv2.cv2 as cv2
 import math
 import numpy as np
 import glob
 import pprint
+from timeit import default_timer as timer
 
-from src.calibration.commons import rotationMatrixToEulerAngles
+from src.calibration.commons import rotationMatrixToEulerAngles, getImageAndResize, calculateCoordinates
 
 # Aruco common parameters
 ARUCO_PARAMETERS = cv2.aruco.DetectorParameters_create()
@@ -20,7 +20,6 @@ RFlip[2,2] = -1.0
 
 def generateMarkerGrid(nx, ny, outputFile):
     # Create gridboard, which is a set of Aruco markers
-    # the following call gets a board of markers 5 wide X 7 tall
     gridboard = cv2.aruco.GridBoard_create(
             markersX=nx, 
             markersY=ny, 
@@ -32,10 +31,6 @@ def generateMarkerGrid(nx, ny, outputFile):
 
     cv2.imshow('Aruco grid', image)
     cv2.waitKey(0)
-
-def getImageAndResize(sourceFile, scale):
-    sourceImage = cv2.imread(sourceFile)
-    return cv2.resize(sourceImage, None, fx=scale, fy=scale)
 
 def getCorners(sourceImage):
     grayImage = cv2.cvtColor(sourceImage, cv2.COLOR_BGR2GRAY)
@@ -58,31 +53,28 @@ def highlightDetectedMarkers(sourceFile, outputFile, shouldSave, scale):
     if shouldSave:
         cv2.imwrite(outputFile, sourceImage)
 
+def getPositionVectors(sourceImage, markerLength, cameraMatrix, distCoeffs):
+    corners, idsFound, _ = getCorners(sourceImage)
+    rVecs, tVecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, markerLength, cameraMatrix, distCoeffs)    
+    idsFound = np.array([x[0] for x in idsFound])    
+    return idsFound, rVecs, tVecs
+
 def estimatePose(sourceFile, outputFile, scale, markerId, markerLength, cameraMatrix, distCoeffs):
     sourceImage = getImageAndResize(sourceFile, scale)
     
     start = timer()
-    
-    corners, ids, _ = getCorners(sourceImage)
-    rVecs, tVecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, markerLength, cameraMatrix, distCoeffs)
-
+    ids, rVecs, tVecs = getPositionVectors(sourceImage, markerLength, cameraMatrix, distCoeffs)
     end = timer()
-
     print('Time elapsed to estimate pose: ' + '%3fms' % ((end - start) * 1000))
 
-    if ids is not None:
-        i = np.where(ids == markerId)[0][0]
+    indexes = np.where(ids == markerId)[0]
 
+    if indexes.size > 0:
+        i = indexes[0]
         cv2.aruco.drawAxis(sourceImage, cameraMatrix, distCoeffs, rVecs[i], tVecs[i], markerLength/2)
 
-        # Converting the rVector into Euler angles
-        rMatrix = np.matrix(cv2.Rodrigues(rVecs[i])[0])
-        roll, pitch, yaw = rotationMatrixToEulerAngles(RFlip*rMatrix) # Flipping before converting
-
-        traX, traY, traZ = tVecs[i][0]
-
         coordNames = ['Roll: ', 'Pitch: ', 'Yaw: ', 'Tra X: ', 'Tra Y: ', 'Tra Z: ']
-        coords = [math.degrees(roll), math.degrees(pitch), math.degrees(yaw), traX, traY, traZ]
+        coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), RFlip)
 
         font = cv2.FONT_HERSHEY_SIMPLEX
         initialPosition = (10,100)
@@ -107,5 +99,25 @@ def estimatePose(sourceFile, outputFile, scale, markerId, markerLength, cameraMa
         #cv2.destroyAllWindows()
 
         cv2.imwrite(outputFile, sourceImage)
+
+        return coords
+
     else:
-        print('No markers were found')
+        print('Marker with ID = ' + str(markerId) + ' was not found')
+
+def exportCoordinatesToFile(sourceFile, outputFile, scale, markerId, markerLength, cameraMatrix, distCoeffs):
+    sourceImage = getImageAndResize(sourceFile, scale)
+    ids, rVecs, tVecs = getPositionVectors(sourceImage, markerLength, cameraMatrix, distCoeffs)
+
+    indexes = np.where(ids == markerId)[0]
+
+    if indexes.size > 0:
+        i = indexes[0]
+        coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), RFlip)
+        coords.insert(0, markerId)
+
+        with open(outputFile, mode='w') as coordsFile:
+            writer = csv.writer(coordsFile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(coords)
+    else:
+        print('Marker with ID = ' + str(markerId) + ' was not found')

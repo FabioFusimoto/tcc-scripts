@@ -37,14 +37,14 @@ def drawPositionVectors(imageSource, imageOutput, calibrationFile, squareSize, w
     cameraMatrix, distortionCoefficients = chess.loadCalibrationCoeficients(calibrationFile)
     chess.drawPositionVectors(imageSource, imageOutput, cameraMatrix, distortionCoefficients, squareSize, width, height, scale)
 
-#getCoefficients('images/for-calibration', 'images/calibration-output', 'X', 'jpg', 0.228/9, 6, 9, 1.0,
+#getCoefficients('images/for-calibration', 'images/calibration-output', 'X', 'jpg', 22.8/9, 6, 9, 1.0,
 #                'tests/calibration-coefficients/g7-play-X-100-percent-resolution.yml') # measured 22.8cm - 9 squares
 
-# undistortImage('images/for-calibration/C11.jpg', 'images/calibration-output/C11-undistorted.jpg', 
-#                'tests/calibration-coefficients/g7-play-75-percent-resolution.yml', 0.75)
+#undistortImage('images/for-calibration/C11.jpg', 'images/calibration-output/C11-undistorted.jpg', 
+#               'tests/calibration-coefficients/g7-play-75-percent-resolution.yml', 0.75)
 
-# findChessboardCoordinates('images/for-calibration/D100cm.jpg', 'tests/calibration-coefficients/g7-play-100-percent-resolution.yml',
-#                           0.228/9, 6, 9, 1.0) # measured 22.8cm - 9 squares
+#findChessboardCoordinates('images/for-calibration/D100cm.jpg', 'tests/calibration-coefficients/g7-play-100-percent-resolution.yml',
+#                          22.8/9, 6, 9, 1.0) # measured 22.8cm - 9 squares
 
 poseCalibImages = glob.glob('images/for-calibration/Z*.jpg')
 calibrationFile = 'tests/calibration-coefficients/g7-play-X-75-percent-resolution.yml'
@@ -53,4 +53,4 @@ for img in poseCalibImages:
     print('\nEstimating pose on ' + img.split('\\')[-1])
     outputFile = 'images/calibration-output/' + img.split('\\')[-1].split('.')[0] + '-coords.jpg'
     print('Saving coordinates to ' + outputFile)
-    drawPositionVectors(img, outputFile, calibrationFile, 0.228/9, 6, 9, 0.75)
+    drawPositionVectors(img, outputFile, calibrationFile, 22.8/9, 6, 9, 0.75)
