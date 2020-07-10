@@ -24,7 +24,7 @@ def writeCoordinatesToCSV(sourceFile, outputFile, scale, markerId, markerLength,
 #findMarkersOn('images/for-calibration/ARUZ50.jpg', 'images/calibration-output/ARUZ50_markers_found.jpg',
 #              True, 0.75)
 
-imageFiles = glob.glob('images/for-calibration/ARU*.jpg')
+imageFiles = glob.glob('images/for-calibration/ARU_MISC*.jpg')
 calibrationFile = 'tests/calibration-coefficients/g7-play-X-75-percent-resolution.yml'
 
 #for img in imageFiles:
