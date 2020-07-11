@@ -24,17 +24,17 @@ def writeCoordinatesToCSV(sourceFile, outputFile, scale, markerId, markerLength,
 #findMarkersOn('images/for-calibration/ARUZ50.jpg', 'images/calibration-output/ARUZ50_markers_found.jpg',
 #              True, 0.75)
 
-imageFiles = glob.glob('images/for-calibration/ARU_MISC*.jpg')
+imageFiles = glob.glob('images/for-calibration/ARU_MISC_*.jpg')
 calibrationFile = 'tests/calibration-coefficients/g7-play-X-75-percent-resolution.yml'
 
 #for img in imageFiles:
 #    print('\nEstimating pose on ' + img.split('\\')[-1])
 #    outputFile = 'images/calibration-output/' + img.split('\\')[-1].split('.')[0] + '-pose.jpg'
 #    print('Saving coordinates to ' + outputFile)
-#    estimateMarkersPose(img, outputFile, 0.75, 6, 4.4, calibrationFile)
+#    estimateMarkersPose(img, outputFile, 0.75, 0, 3.78, calibrationFile)
 
 for img in imageFiles:
     print('\nEstimating pose on ' + img.split('\\')[-1])
     outputFile = 'txt/coords/' + img.split('\\')[-1].split('.')[0] + '-coords.csv'
     print('Saving coordinates to ' + outputFile)
-    writeCoordinatesToCSV(img, outputFile, 0.75, 6, 4.4, calibrationFile)
+    writeCoordinatesToCSV(img, outputFile, 0.75, 0, 4.4, calibrationFile)

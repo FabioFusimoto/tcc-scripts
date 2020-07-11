@@ -56,7 +56,8 @@ def highlightDetectedMarkers(sourceFile, outputFile, shouldSave, scale):
 def getPositionVectors(sourceImage, markerLength, cameraMatrix, distCoeffs):
     corners, idsFound, _ = getCorners(sourceImage)
     rVecs, tVecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, markerLength, cameraMatrix, distCoeffs)    
-    idsFound = np.array([x[0] for x in idsFound])    
+    if idsFound is not None:
+        idsFound = np.array([x[0] for x in idsFound])    
     return idsFound, rVecs, tVecs
 
 def estimatePose(sourceFile, outputFile, scale, markerId, markerLength, cameraMatrix, distCoeffs):
@@ -116,8 +117,8 @@ def exportCoordinatesToFile(sourceFile, outputFile, scale, markerId, markerLengt
         coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), RFlip)
         coords.insert(0, markerId)
 
-        with open(outputFile, mode='w') as coordsFile:
+        with open(outputFile, mode='w', newline='') as coordsFile:
             writer = csv.writer(coordsFile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            writer.writerow(coords)
+            writer.writerows([['id', 'roll', 'pitch', 'yaw', 'x', 'y', 'z'], coords])
     else:
         print('Marker with ID = ' + str(markerId) + ' was not found')
