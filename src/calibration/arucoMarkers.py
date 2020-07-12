@@ -106,19 +106,30 @@ def estimatePose(sourceFile, outputFile, scale, markerId, markerLength, cameraMa
     else:
         print('Marker with ID = ' + str(markerId) + ' was not found')
 
-def exportCoordinatesToFile(sourceFile, outputFile, scale, markerId, markerLength, cameraMatrix, distCoeffs):
+def exportCoordinatesToFile(sourceFile, outputFile, scale, markerIds, markerLength, cameraMatrix, distCoeffs):
     sourceImage = getImageAndResize(sourceFile, scale)
     ids, rVecs, tVecs = getPositionVectors(sourceImage, markerLength, cameraMatrix, distCoeffs)
 
-    indexes = np.where(ids == markerId)[0]
+    columnNames = ['id', 'roll', 'pitch', 'yaw', 'x', 'y', 'z']
+    rows = []
 
-    if indexes.size > 0:
-        i = indexes[0]
-        coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), RFlip)
-        coords.insert(0, markerId)
+    # Search for marker coordinates for each given ID
+    for markerId in markerIds:
+        indexes = np.where(ids == markerId)[0]
 
-        with open(outputFile, mode='w', newline='') as coordsFile:
-            writer = csv.writer(coordsFile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            writer.writerows([['id', 'roll', 'pitch', 'yaw', 'x', 'y', 'z'], coords])
-    else:
-        print('Marker with ID = ' + str(markerId) + ' was not found')
+        if indexes.size > 0:
+            i = indexes[0]
+            coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), RFlip)
+            coords.insert(0, markerId)
+            rows.append(coords)
+        else:
+            print('Marker with ID = ' + str(markerId) + ' was not found')
+
+    print('Rows:')
+    pprint.pprint(rows)
+
+    with open(outputFile, mode='w', newline='') as coordsFile:
+        writer = csv.writer(coordsFile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(columnNames)
+        for r in rows:
+            writer.writerow(r)
