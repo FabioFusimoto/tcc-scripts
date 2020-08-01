@@ -1,15 +1,40 @@
 import cv2.cv2 as cv2
 import numpy as np
 from timeit import default_timer as timer
+from threading import Thread
 
 import src.calibration.arucoMarkers as arucoMarkers
 import src.calibration.chessboard as chess
 import src.webcamUtilities.video as video
 from src.calibration.commons import calculateCoordinates
 
+class USBCamVideoStream:
+    def __init__(self, camIndex=0):
+        self.stream = cv2.VideoCapture(camIndex)
+        (self.grabbed, self.frame) = self.stream.read()
+
+        self.stopped = False
+
+    def start(self):
+        Thread(target=self.update, args=()).start()
+        return self
+
+    def update(self):
+        while True:
+            if self.stopped:
+                return
+
+            (self.grabbed, self.frame) = self.stream.read()
+
+    def read(self):
+        return self.frame
+    
+    def stop(self):
+        self.stopped = True
+
 def videoPoseEstimation(markerIds, markerLength, calibrationFile, frameCount):
     cameraMatrix, distCoeffs = chess.loadCalibrationCoeficients(calibrationFile)
-    cam = cv2.VideoCapture(0)
+    cam = USBCamVideoStream(camIndex=0).start()
 
     timeToReadFrames = 0
     timeToEstimatePoses = 0
@@ -17,7 +42,7 @@ def videoPoseEstimation(markerIds, markerLength, calibrationFile, frameCount):
     for _ in range(frameCount):
         timerBeforeFrame = timer()
 
-        _, image = cam.read()
+        image = cam.read()
 
         timerAfterFrame = timer()
         
@@ -38,6 +63,8 @@ def videoPoseEstimation(markerIds, markerLength, calibrationFile, frameCount):
 
     print('\nTime elapsed on reading frames: ' + str(timeToReadFrames) + 's')
     print('Time elapsed on estimating pose: ' + str(timeToEstimatePoses) + 's')
+    
+    cam.stop()
 
 calibrationFile = 'tests/calibration-coefficients/g7-play-X-75-percent-resolution.yml'
 frameCount = 100
