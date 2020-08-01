@@ -1,4 +1,4 @@
-BASE_URL = 'http://192.168.0.13:8080'
+BASE_URL = 'http://localhost:5050'
 
 VIDEO_STREAM_ENDPOINT = '/shot.jpg'
 PHOTO_ENDPOINT = '/photo.jpg'
