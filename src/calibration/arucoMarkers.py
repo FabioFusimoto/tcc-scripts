@@ -13,10 +13,13 @@ ARUCO_PARAMETERS = cv2.aruco.DetectorParameters_create()
 ARUCO_DICT = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_250)
 
 # Rotation flip correction (to align camera and marker axis)
-RFlip = np.zeros((3,3), dtype=np.float32)
-RFlip[0,0] = 1.0
-RFlip[1,1] = -1.0
-RFlip[2,2] = -1.0
+def getRFlip():
+    RFlip = np.zeros((3,3), dtype=np.float32)
+    RFlip[0,0] = 1.0
+    RFlip[1,1] = -1.0
+    RFlip[2,2] = -1.0
+
+    return RFlip
 
 def generateMarkerGrid(nx, ny, outputFile):
     # Create gridboard, which is a set of Aruco markers
@@ -75,7 +78,7 @@ def estimatePose(sourceFile, outputFile, scale, markerId, markerLength, cameraMa
         cv2.aruco.drawAxis(sourceImage, cameraMatrix, distCoeffs, rVecs[i], tVecs[i], markerLength/2)
 
         coordNames = ['Roll: ', 'Pitch: ', 'Yaw: ', 'Tra X: ', 'Tra Y: ', 'Tra Z: ']
-        coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), RFlip)
+        coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), getRFlip())
 
         font = cv2.FONT_HERSHEY_SIMPLEX
         initialPosition = (10,100)
@@ -119,7 +122,7 @@ def exportCoordinatesToFile(sourceFile, outputFile, scale, markerIds, markerLeng
 
         if indexes.size > 0:
             i = indexes[0]
-            coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), RFlip)
+            coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), getRFlip())
             coords.insert(0, markerId)
             rows.append(coords)
         else:
@@ -128,7 +131,7 @@ def exportCoordinatesToFile(sourceFile, outputFile, scale, markerIds, markerLeng
     print('Rows:')
     pprint.pprint(rows)
 
-    with open(outputFile, mode='w', newline='') as coordsFile:
+    with open(outputFile, mode='w+', newline='') as coordsFile:
         writer = csv.writer(coordsFile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
         writer.writerow(columnNames)
         for r in rows:

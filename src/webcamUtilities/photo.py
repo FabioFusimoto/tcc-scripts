@@ -6,15 +6,18 @@ from src.utilities import rotateImages
 from .constants import BASE_URL, PHOTO_ENDPOINT
 from .commons import imageArrayFromURL, decodedImageFromURL
 
-def takePicture():
+def takePicture(showPicture=False):
     img = decodedImageFromURL(BASE_URL + PHOTO_ENDPOINT)
     
-    cv2.imshow('Picture', img)
+    if(showPicture):
+        cv2.imshow('Picture', img)
 
-    while True:
-        time.sleep(1)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        while True:
+            time.sleep(1)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+    
+    return img
 
 def savePhoto(filename, rotationType=None):
     img = decodedImageFromURL(BASE_URL + PHOTO_ENDPOINT)

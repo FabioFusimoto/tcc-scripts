@@ -22,5 +22,6 @@ def multiplePhotoSave(path, prefix, extension, count):
     input('Press ENTER key to start\n')
     photo.saveMultiple(path, prefix, extension, count)
 
-testPhotoSave(filename='images/for-calibration/SCENE_00.jpg', rotationType=cv2.ROTATE_90_CLOCKWISE)
+# testPhotoSave(filename='images/for-calibration/VR_02.jpg', rotationType=cv2.ROTATE_90_CLOCKWISE)
 # multiplePhotoSave('images/for-calibration', 'X', 'jpg', 50)
+testVideoStream()

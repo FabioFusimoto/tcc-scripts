@@ -24,7 +24,7 @@ def writeCoordinatesToCSV(sourceFile, outputFile, scale, markerIds, markerLength
 #findMarkersOn('images/for-calibration/ARUZ50.jpg', 'images/calibration-output/ARUZ50_markers_found.jpg',
 #              True, 0.75)
 
-imageFiles = glob.glob('images/for-calibration/SCENE*.jpg')
+imageFiles = glob.glob('images/for-calibration/VR*.jpg')
 calibrationFile = 'tests/calibration-coefficients/g7-play-X-75-percent-resolution.yml'
 
 # for img in imageFiles:
@@ -35,6 +35,6 @@ calibrationFile = 'tests/calibration-coefficients/g7-play-X-75-percent-resolutio
 
 for img in imageFiles:
     print('\nEstimating pose on ' + img.split('\\')[-1])
-    outputFile = 'txt/coords/' + img.split('\\')[-1].split('.')[0] + '-coords.csv'
+    outputFile = 'Z:/workspace/OpenCV_Integration/Content/' + img.split('\\')[-1].split('.')[0] + '-coords.csv'
     print('Saving coordinates to ' + outputFile)
-    writeCoordinatesToCSV(img, outputFile, 0.75, [0, 1, 2, 3], 3.78, calibrationFile)
+    writeCoordinatesToCSV(img, outputFile, 0.75, [0, 1, 3], 3.78, calibrationFile)
