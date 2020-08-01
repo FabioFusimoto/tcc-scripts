@@ -1,40 +1,15 @@
 import cv2.cv2 as cv2
 import numpy as np
 from timeit import default_timer as timer
-from threading import Thread
 
 import src.calibration.arucoMarkers as arucoMarkers
 import src.calibration.chessboard as chess
-import src.webcamUtilities.video as video
+import src.USBCam.video as video
 from src.calibration.commons import calculateCoordinates
-
-class USBCamVideoStream:
-    def __init__(self, camIndex=0):
-        self.stream = cv2.VideoCapture(camIndex)
-        (self.grabbed, self.frame) = self.stream.read()
-
-        self.stopped = False
-
-    def start(self):
-        Thread(target=self.update, args=()).start()
-        return self
-
-    def update(self):
-        while True:
-            if self.stopped:
-                return
-
-            (self.grabbed, self.frame) = self.stream.read()
-
-    def read(self):
-        return self.frame
-    
-    def stop(self):
-        self.stopped = True
 
 def videoPoseEstimation(markerIds, markerLength, calibrationFile, frameCount):
     cameraMatrix, distCoeffs = chess.loadCalibrationCoeficients(calibrationFile)
-    cam = USBCamVideoStream(camIndex=0).start()
+    cam = video.USBCamVideoStream(camIndex=0).start()
 
     timeToReadFrames = 0
     timeToEstimatePoses = 0
@@ -66,15 +41,16 @@ def videoPoseEstimation(markerIds, markerLength, calibrationFile, frameCount):
     
     cam.stop()
 
-calibrationFile = 'tests/calibration-coefficients/g7-play-X-75-percent-resolution.yml'
-frameCount = 100
+def testLivePoseEstimation():
+    calibrationFile = 'tests/calibration-coefficients/g7-play-X-75-percent-resolution.yml'
+    frameCount = 100
 
-start = timer()
+    start = timer()
 
-videoPoseEstimation([0,1,3], 3.78, calibrationFile, frameCount)
+    videoPoseEstimation([0,1,3], 3.78, calibrationFile, frameCount)
 
-end = timer()
+    end = timer()
 
-timeElapsed = end - start
-print('\nTotal time elapsed: ' + str(timeElapsed) + 's')
-print('Equivalent to: ' + str(frameCount/timeElapsed) + ' frames per second')
+    timeElapsed = end - start
+    print('\nTotal time elapsed: ' + str(timeElapsed) + 's')
+    print('Equivalent to: ' + str(frameCount/timeElapsed) + ' frames per second')

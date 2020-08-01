@@ -1,19 +1,27 @@
 import cv2.cv2 as cv2
 import numpy as np
+from threading import Thread
 
-def streamVideo():
-    cam = cv2.VideoCapture(0)
+class USBCamVideoStream:
+    def __init__(self, camIndex=0):
+        self.stream = cv2.VideoCapture(camIndex)
+        (self.grabbed, self.frame) = self.stream.read()
 
-    while True:
-        ret, frame = cam.read()
-        if ret:        
-            grayFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        self.stopped = False
 
-            cv2.imshow('Frame', grayFrame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-        else:
-            print('No return from camera')
+    def start(self):
+        Thread(target=self.update, args=()).start()
+        return self
+
+    def update(self):
+        while True:
+            if self.stopped:
+                return
+
+            (self.grabbed, self.frame) = self.stream.read()
+
+    def read(self):
+        return self.frame
     
-    cv2.destroyAllWindows()
-    cam.release()
+    def stop(self):
+        self.stopped = True
