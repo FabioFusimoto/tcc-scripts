@@ -1,12 +1,10 @@
 import cv2.cv2 as cv2
-import time
-from timeit import default_timer as timer
 
-import src.webcamUtilities.video as video
+from src.USBCam.video import USBCamVideoStream as USBCam
 
 def savePictureFromVideo(filename, display=False):
-    cam = video.ThreadedWebCam().start()
-    image = cam.read()
+    cam = USBCam().start()
+    image = cam.frame
 
     if display:
         cv2.imshow('Frame', image)
@@ -24,11 +22,9 @@ def savePictureFromVideo(filename, display=False):
     return
 
 def takeMultiplePicturesFromVideo(filename, repetitions):
-    for i in range(repetitions):
+    for i in range(50, 50 + repetitions):
         input('Press to take a picture')
         savePictureFromVideo(filename + '-' + f'{i:0>2d}' + '.jpg', False)
 
-# testPhotoSave(filename='images/for-calibration/VR_02.jpg', rotationType=cv2.ROTATE_90_CLOCKWISE)
-# multiplePhotoSave('images/for-calibration', 'X', 'jpg', 50)
-# testVideoStream()
-takeMultiplePicturesFromVideo('images/test-1280x720', 5)
+#savePictureFromVideo('images/front-test.jpg', False)
+#takeMultiplePicturesFromVideo('images/for-calibration/chess-1280x720', 50)
