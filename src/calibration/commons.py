@@ -43,14 +43,14 @@ def calculateCoordinates(rVecs, tVecs, RFlip, scale=None):
         return [math.degrees(roll), math.degrees(pitch), math.degrees(yaw), 
                 traX[0] * scale, traY[0] * scale, traZ[0] * scale]
 
-def saveCalibrationCoeficients(mtx, dist, path):
+def saveCalibrationCoefficients(mtx, dist, path):
     """Save the camera matrix and the distortion coefficients to a given file"""
     cvFileHandler = cv2.FileStorage(path, flags=1)
     cvFileHandler.write("K", mtx)
     cvFileHandler.write("D", dist)
     cvFileHandler.release()
 
-def loadCalibrationCoeficients(path):
+def loadCalibrationCoefficients(path):
     """Loads camera matrix and distortion coefficients from path"""
     cvFileHandler = cv2.FileStorage(path, cv2.FILE_STORAGE_READ)
 

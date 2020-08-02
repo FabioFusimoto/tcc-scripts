@@ -81,10 +81,10 @@ def estimatePose(sourceFile, outputFile, scale, markerId, markerLength, cameraMa
         coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), getRFlip())
 
         font = cv2.FONT_HERSHEY_SIMPLEX
-        initialPosition = (10,100)
+        initialPosition = (0,100)
         positionIncrement = 50
         scale = 1.5
-        color = (0,0,0)
+        color = (0,128,255)
         thickness = 2
 
         for j in range(len(coords) + 3):

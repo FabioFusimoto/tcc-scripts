@@ -3,12 +3,11 @@ import numpy as np
 from timeit import default_timer as timer
 
 import src.calibration.arucoMarkers as arucoMarkers
-import src.calibration.chessboard as chess
 import src.USBCam.video as video
-from src.calibration.commons import calculateCoordinates
+from src.calibration.commons import calculateCoordinates, loadCalibrationCoefficients
 
 def videoPoseEstimation(markerIds, markerLength, calibrationFile, frameCount):
-    cameraMatrix, distCoeffs = chess.loadCalibrationCoeficients(calibrationFile)
+    cameraMatrix, distCoeffs = loadCalibrationCoefficients(calibrationFile)
     cam = video.USBCamVideoStream(camIndex=0).start()
 
     timeToReadFrames = 0
@@ -54,3 +53,5 @@ def testLivePoseEstimation():
     timeElapsed = end - start
     print('\nTotal time elapsed: ' + str(timeElapsed) + 's')
     print('Equivalent to: ' + str(frameCount/timeElapsed) + ' frames per second')
+
+testLivePoseEstimation()

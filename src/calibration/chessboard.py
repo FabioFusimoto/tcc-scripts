@@ -6,7 +6,7 @@ import numpy as np
 import glob
 import pprint
 
-from src.calibration.commons import rotationMatrixToEulerAngles, getImageAndResize, saveCalibrationCoeficients, loadCalibrationCoeficients, calculateCoordinates 
+from src.calibration.commons import rotationMatrixToEulerAngles, getImageAndResize, calculateCoordinates 
 
 # termination criteria
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -129,9 +129,9 @@ def drawPositionVectors(sourceFile, outputFile, cameraMatrix, distortionCoeffs, 
         font = cv2.FONT_HERSHEY_SIMPLEX
         initialPosition = (10,100)
         positionIncrement = 50
-        scale = 1.5
-        color = (0,0,0)
-        thickness = 2
+        scale = 1.0
+        color = (0,128,255)
+        thickness = 1
 
         for i in range(len(coords) + 3):
             position = (initialPosition[0], initialPosition[1] + i * positionIncrement)

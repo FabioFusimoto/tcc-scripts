@@ -3,7 +3,7 @@ import numpy as np
 from threading import Thread
 
 class USBCamVideoStream:
-    def __init__(self, camIndex=0):
+    def __init__(self, camIndex=1):
         self.stream = cv2.VideoCapture(camIndex)
         (self.grabbed, self.frame) = self.stream.read()
 
