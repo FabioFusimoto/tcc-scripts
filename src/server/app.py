@@ -1,16 +1,20 @@
-from flask import Flask, Response, jsonify
+from flask import Flask, jsonify, Response, session
+import pprint
+import signal
+import sys
 from time import sleep
 
 from src.calibration.commons import loadCalibrationCoefficients
 import src.webcamUtilities.video as webVideo
 import src.USBCam.video as USBVideo
 from src.server.coordinatesEstimation import estimatePoses
+from src.server.objects import MARKER_IDS, MARKER_LENGTH
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = b'SECRET_KEY'
 
-calibrationFile = 'files/g7-play-1280x720-landscape.yml'
-markerIds = [0, 1, 3]
-markerLength = 3.78
+## Camera parameters and configuration
+calibrationFile = 'src/server/files/g7-play-1280x720.yml'
 cameraMatrix, distCoeffs = loadCalibrationCoefficients(calibrationFile)
 
 camType = 'USB'
@@ -28,16 +32,26 @@ def home():
 
 @app.route('/pose')
 def getCoordinates():
-    poses = estimatePoses(markerIds, markerLength, cameraMatrix, distCoeffs, cam, camType)
-    return jsonify(poses)
+    poses = estimatePoses(MARKER_IDS, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
+
+    for markerId, returnDict in poses.items():
+        if returnDict['found'] == True:
+            if 'poses' in session.keys():
+                session['poses'].update({markerId: returnDict['coordinates']})
+            else:
+                session['poses'] = {markerId: returnDict['coordinates']}
+
+    return jsonify(session._get_current_object()['poses'])
 
 @app.route('/pose-stream')
 def getCoordinatesStream():
-    pose = estimatePoses(markerIds, markerLength, cameraMatrix, distCoeffs, cam, camType)
+    pose = estimatePoses(MARKER_IDS, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
 
     def streamer():
-        while True:
+        i = 0
+        while i < 10:
             yield str(pose)
+            i += 1
 
     return Response(streamer())
 
@@ -50,3 +64,14 @@ def counter():
             yield "Count: {}\n".format(count)
             sleep(1/60)
     return Response(streamer())
+
+# On exit (Ctrl + C), we should stop the camera thread so the script stops as expected
+def exitHandler(signal, frame):
+    cam.stop()
+    print('Cam stopped')
+    sys.exit(1)
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, exitHandler)
+    app.run('127.0.0.1',port=5000)
+    session.permanent = True

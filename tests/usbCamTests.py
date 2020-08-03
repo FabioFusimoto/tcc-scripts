@@ -1,10 +1,12 @@
 import cv2.cv2 as cv2
+import numpy as np
+from timeit import default_timer as timer
 
 from src.USBCam.video import USBCamVideoStream as USBCam
 
 def savePictureFromVideo(filename, display=False):
     cam = USBCam().start()
-    image = cam.frame
+    image = cam.read()
 
     if display:
         cv2.imshow('Frame', image)
@@ -25,6 +27,3 @@ def takeMultiplePicturesFromVideo(filename, repetitions):
     for i in range(50, 50 + repetitions):
         input('Press to take a picture')
         savePictureFromVideo(filename + '-' + f'{i:0>2d}' + '.jpg', False)
-
-#savePictureFromVideo('images/front-test.jpg', False)
-#takeMultiplePicturesFromVideo('images/for-calibration/chess-1280x720', 50)

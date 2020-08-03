@@ -22,18 +22,14 @@ def estimatePoses(markerIds, markerLength, cameraMatrix, distCoeffs, cam, camTyp
         if indexes.size > 0:
             i = indexes[0]
             coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), arucoMarkers.getRFlip())
-            poses[markerId] = {'0_roll':  coords[0],
-                               '1_pitch': coords[1],
-                               '2_yaw':   coords[2],
-                               '3_x':     coords[3],
-                               '4_y':     coords[4],
-                               '5_z':     coords[5]}
+            poses[str(markerId)] = {'found':       True,
+                                    'coordinates': {'0_roll':  coords[0],
+                                                    '1_pitch': coords[1],
+                                                    '2_yaw':   coords[2],
+                                                    '3_x':     coords[3],
+                                                    '4_y':     coords[4],
+                                                    '5_z':     coords[5]}}
         else:
-            poses[markerId] = {'0_roll':  None,
-                               '1_pitch': None,
-                               '2_yaw':   None,
-                               '3_x':     None,
-                               '4_y':     None,
-                               '5_z':     None}
+            poses[str(markerId)] = {'found': False}
 
     return poses

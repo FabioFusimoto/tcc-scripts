@@ -26,7 +26,7 @@ def generateMarkerGrid(nx, ny, outputFile):
     gridboard = cv2.aruco.GridBoard_create(
             markersX=nx, 
             markersY=ny, 
-            markerLength=0.04, 
+            markerLength=0.07, 
             markerSeparation=0.01, 
             dictionary=ARUCO_DICT)
     image = gridboard.draw(outSize=(988,1400))
