@@ -32,6 +32,7 @@ def home():
 
 @app.route('/pose')
 def getCoordinates():
+    session.permanent = True
     poses = estimatePoses(MARKER_IDS, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
 
     for markerId, returnDict in poses.items():
@@ -41,7 +42,7 @@ def getCoordinates():
             else:
                 session['poses'] = {markerId: returnDict['coordinates']}
 
-    return jsonify(session._get_current_object()['poses'])
+    return jsonify(session._get_current_object().get('poses', {}))
 
 @app.route('/pose-stream')
 def getCoordinatesStream():
@@ -65,6 +66,11 @@ def counter():
             sleep(1/60)
     return Response(streamer())
 
+@app.before_first_request
+def clearPreviousSession():
+    session.permanent = True
+    session.clear()
+
 # On exit (Ctrl + C), we should stop the camera thread so the script stops as expected
 def exitHandler(signal, frame):
     cam.stop()
@@ -74,4 +80,3 @@ def exitHandler(signal, frame):
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, exitHandler)
     app.run('127.0.0.1',port=5000)
-    session.permanent = True
