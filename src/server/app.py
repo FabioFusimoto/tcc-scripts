@@ -48,19 +48,6 @@ def getCoordinates():
 
     return jsonify(session._get_current_object().get('poses', {}))
 
-@app.route('/pose-stream')
-def getCoordinatesStream():
-    markerIds = MARKER_TO_OBJECT.keys()
-    pose = estimatePoses(markerIds, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
-
-    def streamer():
-        i = 0
-        while i < 10:
-            yield str(pose)
-            i += 1
-
-    return Response(streamer())
-
 @app.route('/counter')
 def counter():
     def streamer():
