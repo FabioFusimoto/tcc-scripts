@@ -8,7 +8,8 @@ from src.calibration.commons import loadCalibrationCoefficients
 import src.webcamUtilities.video as webVideo
 import src.USBCam.video as USBVideo
 from src.server.coordinatesEstimation import estimatePoses
-from src.server.objects import MARKER_IDS, MARKER_LENGTH
+from src.server.coordinatesTransformation import posesToUnrealCoordinates
+from src.server.objects import MARKER_LENGTH, MARKER_TO_OBJECT
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = b'SECRET_KEY'
@@ -33,20 +34,24 @@ def home():
 @app.route('/pose')
 def getCoordinates():
     session.permanent = True
-    poses = estimatePoses(MARKER_IDS, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
+    markerIds = list(map(int, MARKER_TO_OBJECT.keys()))
 
-    for markerId, returnDict in poses.items():
-        if returnDict['found'] == True:
+    poses = estimatePoses(markerIds, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
+    unrealCoordinates = posesToUnrealCoordinates(poses)
+
+    for markerId, data in unrealCoordinates.items():
+        if data['found'] == True:
             if 'poses' in session.keys():
-                session['poses'].update({markerId: returnDict['coordinates']})
+                session['poses'].update({markerId: data['coordinates']})
             else:
-                session['poses'] = {markerId: returnDict['coordinates']}
+                session['poses'] = {markerId: data['coordinates']}
 
     return jsonify(session._get_current_object().get('poses', {}))
 
 @app.route('/pose-stream')
 def getCoordinatesStream():
-    pose = estimatePoses(MARKER_IDS, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
+    markerIds = MARKER_TO_OBJECT.keys()
+    pose = estimatePoses(markerIds, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
 
     def streamer():
         i = 0

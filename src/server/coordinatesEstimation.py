@@ -3,6 +3,7 @@ import numpy as np
 
 import src.calibration.arucoMarkers as arucoMarkers
 from src.calibration.commons import calculateCoordinates
+from src.server.objects import MARKER_TO_OBJECT
 
 def estimatePoses(markerIds, markerLength, cameraMatrix, distCoeffs, cam, camType):
     image = cam.read()
@@ -22,14 +23,14 @@ def estimatePoses(markerIds, markerLength, cameraMatrix, distCoeffs, cam, camTyp
         if indexes.size > 0:
             i = indexes[0]
             coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), arucoMarkers.getRFlip())
-            poses[str(markerId)] = {'found':       True,
-                                    'coordinates': {'0_roll':  coords[0],
-                                                    '1_pitch': coords[1],
-                                                    '2_yaw':   coords[2],
-                                                    '3_x':     coords[3],
-                                                    '4_y':     coords[4],
-                                                    '5_z':     coords[5]}}
+            poses[MARKER_TO_OBJECT[str(markerId)]] = {'found': True,
+                                                      'pose':  {'roll':  coords[0],
+                                                                'pitch': coords[1],
+                                                                'yaw':   coords[2],
+                                                                'x':     coords[3],
+                                                                'y':     coords[4],
+                                                                'z':     coords[5]}}
         else:
-            poses[str(markerId)] = {'found': False}
+            poses[MARKER_TO_OBJECT[str(markerId)]] = {'found': False}
 
     return poses
