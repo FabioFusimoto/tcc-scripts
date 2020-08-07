@@ -19,19 +19,19 @@ def writeCoordinatesToCSV(sourceFile, outputFile, scale, markerIds, markerLength
     cameraMatrix, distCoeffs = commons.loadCalibrationCoefficients(calibrationFile)
     arucoMarkers.exportCoordinatesToFile(sourceFile, outputFile, scale, markerIds, markerLength, cameraMatrix, distCoeffs)
 
-createArucoGrid(2, 4, 'images/arucoGrid.jpg')
+#createArucoGrid(2, 4, 'images/arucoGrid.jpg')
 
 #findMarkersOn('images/for-calibration/ARUZ50.jpg', 'images/calibration-output/ARUZ50_markers_found.jpg',
 #              True, 0.75)
 
-#imageFiles = glob.glob('images/test*.jpg')
-#calibrationFile = 'tests/calibration-coefficients/g7-play-1280x720-landscape.yml'
+imageFiles = glob.glob('images/pivot*.jpg')
+calibrationFile = 'tests/calibration-coefficients/g7-play-1280x720.yml'
 
-#for img in imageFiles:
-#    print('\nEstimating pose on ' + img.split('\\')[-1])
-#    outputFile = 'images/calibration-output/' + img.split('\\')[-1].split('.')[0] + '-pose.jpg'
-#    print('Saving coordinates to ' + outputFile)
-#    estimateMarkersPose(img, outputFile, 1, 0, 3.78, calibrationFile)
+for img in imageFiles:
+    print('\nEstimating pose on ' + img.split('\\')[-1])
+    outputFile = 'images/calibration-output/' + img.split('\\')[-1].split('.')[0] + '-pose.jpg'
+    print('Saving coordinates to ' + outputFile)
+    estimateMarkersPose(img, outputFile, 1, 3, 3.78, calibrationFile)
 
 #for img in imageFiles:
 #    print('\nEstimating pose on ' + img.split('\\')[-1])
