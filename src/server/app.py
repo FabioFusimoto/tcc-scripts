@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, Response, session
+from flask import Flask, jsonify, Response, request, session
 import pprint
 import signal
 import sys
@@ -7,8 +7,8 @@ from time import sleep
 from src.calibration.commons import loadCalibrationCoefficients
 import src.webcamUtilities.video as webVideo
 import src.USBCam.video as USBVideo
-from src.server.coordinatesEstimation import estimatePoses
-from src.server.coordinatesTransformation import posesToUnrealCoordinates
+from src.server.coordinatesEstimation import estimatePoses, estimatePosesFromPivot
+from src.server.coordinatesTransformation import posesToUnrealCoordinates, posesToUnrealCoordinatesFromPivot
 from src.server.objects import MARKER_LENGTH, MARKER_TO_OBJECT
 
 app = Flask(__name__)
@@ -23,9 +23,19 @@ camType = 'USB'
 cam = {}
 
 if camType == 'USB':
-    cam = USBVideo.USBCamVideoStream().start()
+    cam = USBVideo.USBCamVideoStream(camIndex=2).start()
 else:
     cam = webVideo.ThreadedWebCam().start()
+
+def updateSession(newCoordinates):
+    for markerId, data in newCoordinates.items():
+        if data['found'] == True:
+            if 'poses' in session.keys():
+                session['poses'].update({markerId: data['pose']})
+            else:
+                session['poses'] = {markerId: data['pose']}
+    
+    session.permanent = True
 
 @app.route('/')
 def home():
@@ -39,12 +49,20 @@ def getCoordinates():
     poses = estimatePoses(markerIds, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
     unrealCoordinates = posesToUnrealCoordinates(poses)
 
-    for markerId, data in unrealCoordinates.items():
-        if data['found'] == True:
-            if 'poses' in session.keys():
-                session['poses'].update({markerId: data['coordinates']})
-            else:
-                session['poses'] = {markerId: data['coordinates']}
+    updateSession(unrealCoordinates)
+
+    return jsonify(session._get_current_object().get('poses', {}))
+
+@app.route('/pose-from-pivot')
+def getCoordinatesFromPivotPerspective():
+    session.permanent = True
+    markerIds = list(map(int, MARKER_TO_OBJECT.keys()))
+    pivotMarkerId = request.args.get('pivot', default=3, type=int)
+    
+    poses = estimatePosesFromPivot(markerIds, pivotMarkerId, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
+    unrealCoordinates = posesToUnrealCoordinatesFromPivot(poses)
+
+    updateSession(unrealCoordinates)
 
     return jsonify(session._get_current_object().get('poses', {}))
 

@@ -21,6 +21,14 @@ def getRFlip():
 
     return RFlip
 
+def getMarkerRFlip():
+    RFlip = np.zeros((3,3), dtype=np.float32)
+    RFlip[0,0] = 1.0
+    RFlip[1,1] = 1.0
+    RFlip[2,2] = 1.0
+
+    return RFlip
+
 def generateMarkerGrid(nx, ny, outputFile):
     # Create gridboard, which is a set of Aruco markers
     gridboard = cv2.aruco.GridBoard_create(
@@ -60,10 +68,11 @@ def getPositionVectors(sourceImage, markerLength, cameraMatrix, distCoeffs):
     corners, idsFound, _ = getCorners(sourceImage)
     rVecs, tVecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, markerLength, cameraMatrix, distCoeffs)    
     if idsFound is not None:
-        idsFound = np.array([x[0] for x in idsFound])    
+        idsFound = np.array([x[0] for x in idsFound])
+
     return idsFound, rVecs, tVecs
 
-def estimatePose(sourceFile, outputFile, scale, markerId, markerLength, cameraMatrix, distCoeffs):
+def estimatePose(sourceFile, outputFile, scale, markerId, markerLength, cameraMatrix, distCoeffs, printCameraPosition=True):
     sourceImage = getImageAndResize(sourceFile, scale)
     
     start = timer()
@@ -78,7 +87,7 @@ def estimatePose(sourceFile, outputFile, scale, markerId, markerLength, cameraMa
         cv2.aruco.drawAxis(sourceImage, cameraMatrix, distCoeffs, rVecs[i], tVecs[i], markerLength/2)
 
         coordNames = ['Roll: ', 'Pitch: ', 'Yaw: ', 'Tra X: ', 'Tra Y: ', 'Tra Z: ']
-        coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), getRFlip())
+        coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), getRFlip(), printCameraPosition=printCameraPosition)
 
         font = cv2.FONT_HERSHEY_SIMPLEX
         initialPosition = (0,100)
