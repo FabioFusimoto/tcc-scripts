@@ -46,21 +46,6 @@ def calculateCoordinates(rVec, tVec, RFlip=None, scale=None, printCameraPosition
 
     traX, traY, traZ = tVec
 
-    # if(printCameraPosition):
-    #     cameraTranslation = (-1) * rMatrix.T * np.matrix(tVec)
-
-    #     print('----------------------------------------------')
-    #     print('Camera translation in relation to marker')
-    #     pprint.pprint(['X: {:.2f}'.format(cameraTranslation.item((0,0))), 
-    #                    'Y: {:.2f}'.format(cameraTranslation.item((1,0))), 
-    #                    'Z: {:.2f}'.format(cameraTranslation.item((2,0)))])
-    #     print('Camera rotation in relation to marker')
-    #     pprint.pprint(['Roll: {:.2f}'.format(math.degrees(roll)), 
-    #                    'Pitch: {:.2f}'.format(math.degrees(pitch)), 
-    #                    'Yaw: {:.2f}'.format(math.degrees(yaw))])
-    #     print('----------------------------------------------')
-    #     print('\n\n\n\n')
-
     if scale is None:
         return {'roll':  roll, 
                 'pitch': pitch, 
@@ -95,6 +80,28 @@ def calculateCameraCoordinates(rVec, tVec, RFlip=None):
             'x':     cameraTranslation.item((0,0)),
             'y':     cameraTranslation.item((1,0)),
             'z':     cameraTranslation.item((2,0))}
+
+def calculateRelativePose(referencePose, RT, objectRVec, objectTVec):
+    objectPose = calculateCoordinates(np.reshape(objectRVec, (3,1)), np.reshape(objectTVec, (3,1)))
+
+    markerTranslation = np.dot(RT, np.array([[objectPose['x']],
+                                             [objectPose['y']],
+                                             [objectPose['z']]])) 
+
+    referenceTranslation = np.dot(RT, np.array([[referencePose['x']],
+                                                [referencePose['y']],
+                                                [referencePose['z']]]))
+
+    relativeTranslation = np.subtract(markerTranslation, referenceTranslation)
+
+    objRoll, objPitch, objYaw = rotationMatrixToEulerAngles(getRMatrixFromVector(objectRVec))
+
+    return {'roll':  objRoll - referencePose['roll'],
+            'pitch': objPitch - referencePose['pitch'],
+            'yaw':   objYaw - referencePose['yaw'],
+            'x':     relativeTranslation.item((0,0)),
+            'y':     relativeTranslation.item((1,0)),
+            'z':     relativeTranslation.item((2,0))}
 
 def saveCalibrationCoefficients(mtx, dist, path):
     """Save the camera matrix and the distortion coefficients to a given file"""

@@ -28,4 +28,4 @@ def takeMultiplePicturesFromVideo(filename, repetitions):
         input('Press to take a picture')
         savePictureFromVideo(filename + '-' + f'{i:0>2d}' + '.jpg', False)
 
-savePictureFromVideo('images/camera_position_estimation_02.jpg', True)
+savePictureFromVideo('images/camera_position_estimation_01.jpg', True)

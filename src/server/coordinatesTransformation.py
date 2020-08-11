@@ -1,3 +1,5 @@
+import math
+
 def transformationDictionary(pose, objectType):
     return {
         'marker': {'0_roll':  +pose['roll'] + 90,
@@ -18,22 +20,22 @@ def transformationDictionaryFromPivot(pose, objectType):
     return {
         'marker_pivot': {'0_roll':  0,
                          '1_pitch': 0,
-                         '2_yaw':   90,
+                         '2_yaw':   0,
                          '3_x':     0,
                          '4_y':     0,
                          '5_z':     0},
-        'hmd':          {'0_roll':  +pose['yaw'], 
-                         '1_pitch': -pose['roll'], 
-                         '2_yaw':   +pose['pitch'],
-                         '3_x':     +pose['y'],
-                         '4_y':     +pose['x'],
+        'hmd':          {'0_roll':  +math.degrees(pose['yaw']) - 90,
+                         '1_pitch': +math.degrees(pose['pitch']),
+                         '2_yaw':   -math.degrees(pose['roll']) +180,
+                         '3_x':     +pose['x'],
+                         '4_y':     -pose['y'],
                          '5_z':     +pose['z']}
-    }.get(objectType, {'0_roll':  -pose['roll'], # ok
-                       '1_pitch': +pose['pitch'], 
-                       '2_yaw':   +pose['yaw'],  # ok
-                       '3_x':     -pose['y'],  # ok
-                       '4_y':     +pose['x'],  # ok
-                       '5_z':     -pose['z']}) # ok
+    }.get(objectType, {'0_roll':  +math.degrees(pose['roll']),
+                       '1_pitch': +math.degrees(pose['pitch']),
+                       '2_yaw':   +math.degrees(pose['yaw']),
+                       '3_x':     +pose['x'],
+                       '4_y':     -pose['y'],
+                       '5_z':     +pose['z']}) 
 
 def posesToUnrealCoordinates(poses):
     unrealCoordinates = {}

@@ -1,5 +1,7 @@
 import cv2.cv2 as cv2
 import glob
+import numpy as np
+import pprint
 
 import src.calibration.arucoMarkers as arucoMarkers
 import src.calibration.commons as commons
@@ -24,7 +26,16 @@ def writeCoordinatesToCSV(sourceFile, outputFile, scale, markerIds, markerLength
 def estimateMarkerPoseFromPivot(sourceFile, markersToEstimate, pivotMarkerId, markerLength, calibrationFile):
     cameraMatrix, distCoeffs = commons.loadCalibrationCoefficients(calibrationFile)
 
-    estimatePosesFromPivot(markersToEstimate, pivotMarkerId, markerLength, cameraMatrix, distCoeffs, image=cv2.imread(sourceFile))
+    poses = estimatePosesFromPivot(markersToEstimate, pivotMarkerId, markerLength, cameraMatrix, distCoeffs, image=cv2.imread(sourceFile))
+
+    for _, data in poses.items():
+        if data['found']:
+            data['pose']['roll'] *= 180/np.pi
+            data['pose']['pitch'] *= 180/np.pi
+            data['pose']['yaw'] *= 180/np.pi
+
+    np.set_printoptions(precision=4, suppress=True)
+    pprint.pprint(poses)
 
 #createArucoGrid(2, 4, 'images/arucoGrid.jpg')
 
@@ -47,5 +58,5 @@ calibrationFile = 'src/server/files/g7-play-1280x720.yml'
 #    writeCoordinatesToCSV(img, outputFile, 0.75, [0, 1, 3], 3.78, calibrationFile)
 
 for img in imageFiles:
-    print('>>>>>Estimating pose on: ' + img + '<<<<<')
-    estimateMarkerPoseFromPivot(img, [1], 0, 5.28, calibrationFile)
+    print('\n\n\n>>>>>Estimating pose on: ' + img + '<<<<<')
+    estimateMarkerPoseFromPivot(img, [0, 1], 3, 5.28, calibrationFile)
