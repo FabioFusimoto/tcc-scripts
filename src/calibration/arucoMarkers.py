@@ -21,6 +21,14 @@ def getRFlip():
 
     return RFlip
 
+def getMarkerRFlip():
+    RFlip = np.zeros((3,3), dtype=np.float32)
+    RFlip[0,0] = 1.0
+    RFlip[1,1] = 1.0
+    RFlip[2,2] = 1.0
+
+    return RFlip
+
 def generateMarkerGrid(nx, ny, outputFile):
     # Create gridboard, which is a set of Aruco markers
     gridboard = cv2.aruco.GridBoard_create(

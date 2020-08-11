@@ -32,43 +32,66 @@ def getImageAndResize(sourceFile, scale):
     sourceImage = cv2.imread(sourceFile)
     return cv2.resize(sourceImage, None, fx=scale, fy=scale)
 
-def calculateCoordinates(rVec, tVec, RFlip, scale=None, printCameraPosition=False):
+def getRMatrixFromVector(rVec):
+    return np.matrix(cv2.Rodrigues(rVec)[0])
+
+def calculateCoordinates(rVec, tVec, RFlip=None, scale=None, printCameraPosition=False):
     # Converting the rVector into Euler angles
-    rMatrix = np.matrix(cv2.Rodrigues(rVec)[0])
-    roll, pitch, yaw = rotationMatrixToEulerAngles(RFlip*rMatrix) # Flipping before converting
+    rMatrix = getRMatrixFromVector(rVec)
+    
+    if RFlip is None:
+        roll, pitch, yaw = rotationMatrixToEulerAngles(rMatrix)
+    else:
+        roll, pitch, yaw = rotationMatrixToEulerAngles(RFlip*rMatrix)
+
     traX, traY, traZ = tVec
 
-    if(printCameraPosition):
-        cameraTranslation = (-1) * rMatrix.T * np.matrix(tVec)
+    # if(printCameraPosition):
+    #     cameraTranslation = (-1) * rMatrix.T * np.matrix(tVec)
 
-        print('----------------------------------------------')
-        print('Camera translation in relation to marker')
-        pprint.pprint(['X: {:.2f}'.format(cameraTranslation.item((0,0))), 
-                       'Y: {:.2f}'.format(cameraTranslation.item((1,0))), 
-                       'Z: {:.2f}'.format(cameraTranslation.item((2,0)))])
-        print('Camera rotation in relation to marker')
-        pprint.pprint(['Roll: {:.2f}'.format(math.degrees(roll)), 
-                       'Pitch: {:.2f}'.format(math.degrees(pitch)), 
-                       'Yaw: {:.2f}'.format(math.degrees(yaw))])
-        print('----------------------------------------------')
-        print('\n\n\n\n')
+    #     print('----------------------------------------------')
+    #     print('Camera translation in relation to marker')
+    #     pprint.pprint(['X: {:.2f}'.format(cameraTranslation.item((0,0))), 
+    #                    'Y: {:.2f}'.format(cameraTranslation.item((1,0))), 
+    #                    'Z: {:.2f}'.format(cameraTranslation.item((2,0)))])
+    #     print('Camera rotation in relation to marker')
+    #     pprint.pprint(['Roll: {:.2f}'.format(math.degrees(roll)), 
+    #                    'Pitch: {:.2f}'.format(math.degrees(pitch)), 
+    #                    'Yaw: {:.2f}'.format(math.degrees(yaw))])
+    #     print('----------------------------------------------')
+    #     print('\n\n\n\n')
 
     if scale is None:
-        return [math.degrees(roll), math.degrees(pitch), math.degrees(yaw), traX[0], traY[0], traZ[0]]
+        return {'roll':  roll, 
+                'pitch': pitch, 
+                'yaw':   yaw, 
+                'x':     traX[0], 
+                'y':     traY[0], 
+                'z':     traZ[0]}
     else:
-        return [math.degrees(roll), math.degrees(pitch), math.degrees(yaw), 
-                traX[0] * scale, traY[0] * scale, traZ[0] * scale]
+        return {'roll':  roll, 
+                'pitch': pitch, 
+                'yaw':   yaw, 
+                'x':     traX[0] * scale, 
+                'y':     traY[0] * scale, 
+                'z':     traZ[0] * scale}
 
-def calculateCameraCoordinates(rVec, tVec, RFlip):
+def calculateCameraCoordinates(rVec, tVec, RFlip=None):
+    '''The rotation and translation vectors are the pivot's, as seen by 
+       the camera perspective'''
     # Converting the rVector into Euler angles
-    rMatrix = np.matrix(cv2.Rodrigues(rVec)[0])
-    roll, pitch, yaw = rotationMatrixToEulerAngles(RFlip*rMatrix)
+    rMatrix = getRMatrixFromVector(rVec)
+
+    if RFlip is None:
+        roll, pitch, yaw = rotationMatrixToEulerAngles(rMatrix)
+    else:
+        roll, pitch, yaw = rotationMatrixToEulerAngles(RFlip*rMatrix)
 
     cameraTranslation = (-1) * rMatrix.T * np.matrix(tVec)
 
-    return {'roll':  math.degrees(roll),
-            'pitch': math.degrees(pitch),
-            'yaw':   math.degrees(yaw),
+    return {'roll':  roll,
+            'pitch': pitch,
+            'yaw':   yaw,
             'x':     cameraTranslation.item((0,0)),
             'y':     cameraTranslation.item((1,0)),
             'z':     cameraTranslation.item((2,0))}

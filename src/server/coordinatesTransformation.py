@@ -28,7 +28,12 @@ def transformationDictionaryFromPivot(pose, objectType):
                          '3_x':     +pose['y'],
                          '4_y':     +pose['x'],
                          '5_z':     +pose['z']}
-    }.get(objectType, {})
+    }.get(objectType, {'0_roll':  -pose['roll'], # ok
+                       '1_pitch': +pose['pitch'], 
+                       '2_yaw':   +pose['yaw'],  # ok
+                       '3_x':     -pose['y'],  # ok
+                       '4_y':     +pose['x'],  # ok
+                       '5_z':     -pose['z']}) # ok
 
 def posesToUnrealCoordinates(poses):
     unrealCoordinates = {}
