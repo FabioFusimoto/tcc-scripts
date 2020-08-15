@@ -1,4 +1,6 @@
 from flask import Flask, jsonify, Response, request, session
+import logging
+import math
 import pprint
 import signal
 import sys
@@ -14,8 +16,11 @@ from src.server.objects import MARKER_LENGTH, MARKER_TO_OBJECT
 app = Flask(__name__)
 app.config['SECRET_KEY'] = b'SECRET_KEY'
 
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
 ## Camera parameters and configuration
-calibrationFile = 'src/server/files/g7-play-1280x720.yml'
+calibrationFile = 'src/server/files/J7-pro.yml'
 cameraMatrix, distCoeffs = loadCalibrationCoefficients(calibrationFile)
 
 camType = 'USB'
@@ -60,11 +65,60 @@ def getCoordinatesFromPivotPerspective():
     pivotMarkerId = request.args.get('pivot', default=3, type=int)
     
     poses = estimatePosesFromPivot(markerIds, pivotMarkerId, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
-    unrealCoordinates = posesToUnrealCoordinatesFromPivot(poses)
 
+    # posesToPrint = {'marker_0': {'roll': 0,
+    #                              'pitch': 0,
+    #                              'yaw': 0,
+    #                              'x': 0,
+    #                              'y': 0,
+    #                              'z': 0}}
+
+    # marker = poses.get('marker_0', {'found': False})
+    # if marker['found']:
+    #     pose = marker['pose']
+    #     posesToPrint['marker_0']['roll'] = math.degrees(pose['roll'])
+    #     posesToPrint['marker_0']['pitch'] = math.degrees(pose['pitch'])
+    #     posesToPrint['marker_0']['yaw'] = math.degrees(pose['yaw'])
+    #     posesToPrint['marker_0']['x'] = pose['x']
+    #     posesToPrint['marker_0']['y'] = pose['y']
+    #     posesToPrint['marker_0']['z'] = pose['z']
+
+    # pprint.pprint(posesToPrint)
+
+    unrealCoordinates = posesToUnrealCoordinatesFromPivot(poses)
     updateSession(unrealCoordinates)
 
     return jsonify(session._get_current_object().get('poses', {}))
+
+@app.route('/pose-sequence')
+def getCoordinateSequence():
+    session.permanent = True
+    markerIds = list(map(int, MARKER_TO_OBJECT.keys()))
+    pivotMarkerId = request.args.get('pivot', default=3, type=int)
+    framesToCapture = request.args.get('count', default=60, type=int)
+
+    poseSequence = {'roll':  [],
+                    'pitch': [],
+                    'yaw':   [],
+                    'x':     [],
+                    'y':     [],
+                    'z':     []}
+
+    i = 0
+    while i < framesToCapture:
+        poses = estimatePosesFromPivot(markerIds, pivotMarkerId, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
+        if poses['hmd']['found']:
+            hmdPose = poses['hmd']['pose']
+            poseSequence['roll'].append(math.degrees(hmdPose['roll']))
+            poseSequence['pitch'].append(math.degrees(hmdPose['pitch']))
+            poseSequence['yaw'].append(math.degrees(hmdPose['yaw']))
+            poseSequence['x'].append(hmdPose['x'])
+            poseSequence['y'].append(hmdPose['y'])
+            poseSequence['z'].append(hmdPose['z'])
+        i += 1
+        sleep(1/10)
+
+    return jsonify(poseSequence)
 
 @app.route('/counter')
 def counter():

@@ -10,6 +10,7 @@ from src.calibration.commons import rotationMatrixToEulerAngles, getImageAndResi
 
 # Aruco common parameters
 ARUCO_PARAMETERS = cv2.aruco.DetectorParameters_create()
+ARUCO_PARAMETERS.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
 ARUCO_DICT = cv2.aruco.Dictionary_get(cv2.aruco.DICT_6X6_250)
 
 # Rotation flip correction (to align camera and marker axis)

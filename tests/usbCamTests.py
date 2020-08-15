@@ -24,8 +24,9 @@ def savePictureFromVideo(filename, display=False):
     return
 
 def takeMultiplePicturesFromVideo(filename, repetitions):
-    for i in range(50, 50 + repetitions):
+    for i in range(repetitions):
         input('Press to take a picture')
         savePictureFromVideo(filename + '-' + f'{i:0>2d}' + '.jpg', False)
 
-savePictureFromVideo('images/camera_position_estimation_01.jpg', True)
+savePictureFromVideo('images/img_02.jpg', True)
+#takeMultiplePicturesFromVideo('images/for-calibration/J7-pro', 100)

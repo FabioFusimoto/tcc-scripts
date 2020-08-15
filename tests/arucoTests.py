@@ -42,8 +42,8 @@ def estimateMarkerPoseFromPivot(sourceFile, markersToEstimate, pivotMarkerId, ma
 #findMarkersOn('images/for-calibration/ARUZ50.jpg', 'images/calibration-output/ARUZ50_markers_found.jpg',
 #              True, 0.75)
 
-imageFiles = glob.glob('images/camera_position*.jpg')
-calibrationFile = 'src/server/files/g7-play-1280x720.yml'
+imageFiles = glob.glob('images/img*.jpg')
+calibrationFile = 'src/server/files/J7-pro.yml'
 
 #for img in imageFiles:
 #    print('\nEstimating pose on ' + img.split('\\')[-1])
@@ -59,4 +59,4 @@ calibrationFile = 'src/server/files/g7-play-1280x720.yml'
 
 for img in imageFiles:
     print('\n\n\n>>>>>Estimating pose on: ' + img + '<<<<<')
-    estimateMarkerPoseFromPivot(img, [0, 1], 3, 5.28, calibrationFile)
+    estimateMarkerPoseFromPivot(img, [], 3, 5.28, calibrationFile)
