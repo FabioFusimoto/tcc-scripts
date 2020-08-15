@@ -66,27 +66,22 @@ def getCoordinatesFromPivotPerspective():
     
     poses = estimatePosesFromPivot(markerIds, pivotMarkerId, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
 
-    # posesToPrint = {'hmd': {'roll': 0,
-    #                         'pitch': 0,
-    #                         'yaw': 0,
-    #                         'x': 0,
-    #                         'y': 0,
-    #                         'z': 0},
-    #                 'marker_pivot': {'roll': 0,
-    #                                  'pitch': 0,
-    #                                  'yaw': 0,
-    #                                  'x': 0,
-    #                                  'y': 0,
-    #                                  'z': 0}}
+    # posesToPrint = {'marker_0': {'roll': 0,
+    #                              'pitch': 0,
+    #                              'yaw': 0,
+    #                              'x': 0,
+    #                              'y': 0,
+    #                              'z': 0}}
 
-    # for key, data in poses.items():
-    #     if data['found']:
-    #         posesToPrint[key]['roll'] = math.degrees(data['pose']['roll'])
-    #         posesToPrint[key]['pitch'] = math.degrees(data['pose']['pitch'])
-    #         posesToPrint[key]['yaw'] = math.degrees(data['pose']['yaw'])
-    #         posesToPrint[key]['x'] = data['pose']['x']
-    #         posesToPrint[key]['y'] = data['pose']['y']
-    #         posesToPrint[key]['z'] = data['pose']['z']
+    # marker = poses.get('marker_0', {'found': False})
+    # if marker['found']:
+    #     pose = marker['pose']
+    #     posesToPrint['marker_0']['roll'] = math.degrees(pose['roll'])
+    #     posesToPrint['marker_0']['pitch'] = math.degrees(pose['pitch'])
+    #     posesToPrint['marker_0']['yaw'] = math.degrees(pose['yaw'])
+    #     posesToPrint['marker_0']['x'] = pose['x']
+    #     posesToPrint['marker_0']['y'] = pose['y']
+    #     posesToPrint['marker_0']['z'] = pose['z']
 
     # pprint.pprint(posesToPrint)
 

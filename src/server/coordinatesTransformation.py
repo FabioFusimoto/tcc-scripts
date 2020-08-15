@@ -33,9 +33,9 @@ def transformationDictionaryFromPivot(pose, objectType):
     }.get(objectType, {'0_roll':  +math.degrees(pose['roll']),
                        '1_pitch': +math.degrees(pose['pitch']),
                        '2_yaw':   +math.degrees(pose['yaw']),
-                       '3_x':     +pose['x'],
-                       '4_y':     -pose['y'],
-                       '5_z':     +pose['z']})
+                       '3_x':     +pose['x'],   # ok
+                       '4_y':     +pose['z'],   
+                       '5_z':     +pose['y']})  # ok
 
 def posesToUnrealCoordinates(poses):
     unrealCoordinates = {}
