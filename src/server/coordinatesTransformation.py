@@ -24,18 +24,18 @@ def transformationDictionaryFromPivot(pose, objectType):
                          '3_x':     0,
                          '4_y':     0,
                          '5_z':     0},
-        'hmd':          {'0_roll':  +math.degrees(pose['yaw']) - 90,
-                         '1_pitch': +math.degrees(pose['pitch']),
-                         '2_yaw':   -math.degrees(pose['roll']) +180,
-                         '3_x':     +pose['x'],
-                         '4_y':     -pose['y'],
-                         '5_z':     +pose['z']}
+        'hmd':          {'0_roll':  +math.degrees(pose['yaw']), # ok
+                         '1_pitch': +math.degrees(pose['roll']) + 180, 
+                         '2_yaw':   +math.degrees(pose['pitch']), # ok
+                         '3_x':     +pose['x'], # ok
+                         '4_y':     +pose['z'], # ok
+                         '5_z':     +pose['y']} # ok
     }.get(objectType, {'0_roll':  +math.degrees(pose['roll']),
                        '1_pitch': +math.degrees(pose['pitch']),
                        '2_yaw':   +math.degrees(pose['yaw']),
                        '3_x':     +pose['x'],
                        '4_y':     -pose['y'],
-                       '5_z':     +pose['z']}) 
+                       '5_z':     +pose['z']})
 
 def posesToUnrealCoordinates(poses):
     unrealCoordinates = {}

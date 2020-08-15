@@ -1,5 +1,6 @@
 import cv2.cv2 as cv2
 import numpy as np
+import time
 from threading import Thread
 
 class USBCamVideoStream:
@@ -19,6 +20,7 @@ class USBCamVideoStream:
                 return
 
             (self.grabbed, self.frame) = self.stream.read()
+            time.sleep(1/60)
 
     def read(self):
         return self.frame
