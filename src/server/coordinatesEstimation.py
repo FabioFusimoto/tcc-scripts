@@ -4,10 +4,7 @@ import pprint
 
 import src.calibration.arucoMarkers as arucoMarkers
 from src.calibration.commons import calculateCoordinates, calculateCameraCoordinates, getRMatrixFromVector, calculateRelativePose
-from src.server.objects import MARKER_TO_OBJECT
-
-markerRFlip = arucoMarkers.getMarkerRFlip()
-pivotRFlip = arucoMarkers.getRFlip()
+from src.server.objects import MARKER_TO_OBJECT, HMD_OFFSET
 
 def estimatePoses(markerIds, markerLength, cameraMatrix, distCoeffs, cam, camType):
     image = cam.read()
@@ -55,7 +52,9 @@ def estimatePosesFromPivot(markerIds, pivotMarkerId, markerLength, cameraMatrix,
 
         RT = getRMatrixFromVector(pivotRVec).T
 
-        hmdPose = calculateRelativePose(pivotPose, RT, np.zeros((1,3)), np.zeros((1,3)))
+        hmdPose = calculateRelativePose(pivotPose, RT, np.zeros((1,3)), np.array([[HMD_OFFSET['x']],
+                                                                                  [HMD_OFFSET['y']],
+                                                                                  [HMD_OFFSET['z']]]))
 
         poses = {'hmd':          {'found': True,
                                   'pose':  hmdPose},
