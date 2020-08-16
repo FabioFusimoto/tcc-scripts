@@ -12,6 +12,7 @@ import src.USBCam.video as USBVideo
 from src.server.coordinatesEstimation import estimatePoses, estimatePosesFromPivot
 from src.server.coordinatesTransformation import posesToUnrealCoordinates, posesToUnrealCoordinatesFromPivot
 from src.server.objects import MARKER_LENGTH, MARKER_TO_OBJECT
+from src.server.utils import livePoseEstimation
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = b'SECRET_KEY'
@@ -120,15 +121,12 @@ def getCoordinateSequence():
 
     return jsonify(poseSequence)
 
-@app.route('/counter')
-def counter():
-    def streamer():
-        count = 0
-        while True:
-            count += 1
-            yield "Count: {}\n".format(count)
-            sleep(1/60)
-    return Response(streamer())
+@app.route('/live-pose')
+def estimateLivePose():
+    markerId = request.args.get('marker', default=3, type=int)
+    lastKnownCoords = livePoseEstimation(markerId, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
+
+    return jsonify(lastKnownCoords)
 
 @app.before_first_request
 def clearPreviousSession():
