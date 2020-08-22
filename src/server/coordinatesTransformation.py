@@ -29,6 +29,12 @@ def transformationDictionaryFromPivot(pose, objectType):
                          '2_yaw':   0, # +math.degrees(pose['pitch']),
                          '3_x':     +pose['x'],
                          '4_y':     +pose['z'],
+                         '5_z':     +pose['y']},
+        'syringe':      {'0_roll':  +math.degrees(pose['roll']) - 90,
+                         '1_pitch': +math.degrees(pose['pitch']),
+                         '2_yaw':   +math.degrees(pose['yaw']),
+                         '3_x':     +pose['x'],
+                         '4_y':     +pose['z'],
                          '5_z':     +pose['y']}
     }.get(objectType, {'0_roll':  +math.degrees(pose['roll']),
                        '1_pitch': +math.degrees(pose['pitch']),

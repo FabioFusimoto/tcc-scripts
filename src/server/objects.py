@@ -1,9 +1,17 @@
-MARKER_LENGTH = 5.28
-MARKER_TO_OBJECT = {'0': 'marker_0',
-                    '1': 'marker_1',
-                    '2': 'marker_2',
-                    '3': 'marker_pivot'}
-
-HMD_OFFSET = {'x': 6.0,
-              'y': 0.0,
-              'z': 0.0}
+# The keys are the marker ids
+MARKER_DESCRIPTION = {'0':   {'objectName': 'marker_0',
+                              'length':     5.28},
+                      '1':   {'objectName': 'marker_1',
+                              'length':     5.28},
+                      '2':   {'objectName': 'marker_2',
+                              'length':     5.28},
+                      '3':   {'objectName': 'marker_pivot',
+                              'length':     5.28,
+                              'offset':     {'x': 6.0,
+                                             'y': 0.0,
+                                             'z': 0.0}},
+                      '100': {'objectName': 'syringe',
+                              'length':     2.35,
+                              'offset':     {'x': 0.0,
+                                             'y': -1.5,
+                                             'z': 0.0}}}
