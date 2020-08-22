@@ -11,7 +11,7 @@ import src.webcamUtilities.video as webVideo
 import src.USBCam.video as USBVideo
 from src.server.coordinatesEstimation import estimatePoses, estimatePosesFromPivot
 from src.server.coordinatesTransformation import posesToUnrealCoordinates, posesToUnrealCoordinatesFromPivot
-from src.server.objects import MARKER_LENGTH, MARKER_TO_OBJECT
+from src.server.objects import MARKER_DESCRIPTION
 from src.server.utils import livePoseEstimation
 
 app = Flask(__name__)
@@ -50,9 +50,9 @@ def home():
 @app.route('/pose')
 def getCoordinates():
     session.permanent = True
-    markerIds = list(map(int, MARKER_TO_OBJECT.keys()))
+    markerIds = list(map(int, MARKER_DESCRIPTION.keys()))
 
-    poses = estimatePoses(markerIds, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
+    poses = estimatePoses(markerIds, cameraMatrix, distCoeffs, cam, camType)
     unrealCoordinates = posesToUnrealCoordinates(poses)
 
     updateSession(unrealCoordinates)
@@ -62,10 +62,10 @@ def getCoordinates():
 @app.route('/pose-from-pivot')
 def getCoordinatesFromPivotPerspective():
     session.permanent = True
-    markerIds = list(map(int, MARKER_TO_OBJECT.keys()))
+    markerIds = list(map(int, MARKER_DESCRIPTION.keys()))
     pivotMarkerId = request.args.get('pivot', default=3, type=int)
     
-    poses = estimatePosesFromPivot(markerIds, pivotMarkerId, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
+    poses = estimatePosesFromPivot(markerIds, pivotMarkerId, cameraMatrix, distCoeffs, cam, camType)
 
     # posesToPrint = {'marker_0': {'roll': 0,
     #                              'pitch': 0,
@@ -94,7 +94,7 @@ def getCoordinatesFromPivotPerspective():
 @app.route('/pose-sequence')
 def getCoordinateSequence():
     session.permanent = True
-    markerIds = list(map(int, MARKER_TO_OBJECT.keys()))
+    markerIds = list(map(int, MARKER_DESCRIPTION.keys()))
     pivotMarkerId = request.args.get('pivot', default=3, type=int)
     framesToCapture = request.args.get('count', default=60, type=int)
 
@@ -107,7 +107,7 @@ def getCoordinateSequence():
 
     i = 0
     while i < framesToCapture:
-        poses = estimatePosesFromPivot(markerIds, pivotMarkerId, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
+        poses = estimatePosesFromPivot(markerIds, pivotMarkerId, cameraMatrix, distCoeffs, cam, camType)
         if poses['hmd']['found']:
             hmdPose = poses['hmd']['pose']
             poseSequence['roll'].append(math.degrees(hmdPose['roll']))
@@ -124,7 +124,7 @@ def getCoordinateSequence():
 @app.route('/live-pose')
 def estimateLivePose():
     markerId = request.args.get('marker', default=3, type=int)
-    lastKnownCoords = livePoseEstimation(markerId, MARKER_LENGTH, cameraMatrix, distCoeffs, cam, camType)
+    lastKnownCoords = livePoseEstimation(markerId, cameraMatrix, distCoeffs, cam, camType)
 
     return jsonify(lastKnownCoords)
 

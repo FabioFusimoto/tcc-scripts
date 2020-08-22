@@ -61,36 +61,22 @@ def calculateCoordinates(rVec, tVec, RFlip=None, scale=None, printCameraPosition
                 'y':     traY[0] * scale, 
                 'z':     traZ[0] * scale}
 
-def calculateCameraCoordinates(rVec, tVec, RFlip=None):
-    '''The rotation and translation vectors are the pivot's, as seen by 
-       the camera perspective'''
-    # Converting the rVector into Euler angles
-    rMatrix = getRMatrixFromVector(rVec)
-
-    if RFlip is None:
-        roll, pitch, yaw = rotationMatrixToEulerAngles(rMatrix)
-    else:
-        roll, pitch, yaw = rotationMatrixToEulerAngles(RFlip*rMatrix)
-
-    cameraTranslation = (-1) * rMatrix.T * np.matrix(tVec)
-
-    return {'roll':  roll,
-            'pitch': pitch,
-            'yaw':   yaw,
-            'x':     cameraTranslation.item((0,0)),
-            'y':     cameraTranslation.item((1,0)),
-            'z':     cameraTranslation.item((2,0))}
-
-def calculateRelativePose(referencePose, RT, objectRVec, objectTVec):
+def calculateRelativePose(referencePose, RT, objectRVec, objectTVec, referenceLength, objectLength, offset=None):
     objectPose = calculateCoordinates(np.reshape(objectRVec, (3,1)), np.reshape(objectTVec, (3,1)))
 
-    markerTranslation = np.dot(RT, np.array([[objectPose['x']],
-                                             [objectPose['y']],
-                                             [objectPose['z']]])) 
+    if offset is None:
+        markerTranslation = np.dot(RT, np.array([[objectPose['x'] * objectLength],
+                                                 [objectPose['y'] * objectLength],
+                                                 [objectPose['z'] * objectLength]]))
+    else:
+        markerTranslation = np.dot(RT, np.array([[objectPose['x'] * objectLength + offset['x']],
+                                                 [objectPose['y'] * objectLength + offset['y']],
+                                                 [objectPose['z'] * objectLength + offset['z']]]))
+    
 
-    referenceTranslation = np.dot(RT, np.array([[referencePose['x']],
-                                                [referencePose['y']],
-                                                [referencePose['z']]]))
+    referenceTranslation = np.dot(RT, np.array([[referencePose['x'] * referenceLength],
+                                                [referencePose['y'] * referenceLength],
+                                                [referencePose['z'] * referenceLength]]))
 
     relativeTranslation = np.subtract(markerTranslation, referenceTranslation)
 

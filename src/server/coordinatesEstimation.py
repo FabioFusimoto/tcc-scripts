@@ -3,43 +3,38 @@ import numpy as np
 import pprint
 
 import src.calibration.arucoMarkers as arucoMarkers
-from src.calibration.commons import calculateCoordinates, calculateCameraCoordinates, getRMatrixFromVector, calculateRelativePose
-from src.server.objects import MARKER_TO_OBJECT, HMD_OFFSET
+from src.calibration.commons import calculateCoordinates, getRMatrixFromVector, calculateRelativePose
+from src.server.objects import MARKER_DESCRIPTION
 
-def estimatePoses(markerIds, markerLength, cameraMatrix, distCoeffs, cam, camType):
+def estimatePoses(markerIds, cameraMatrix, distCoeffs, cam, camType):
     image = cam.read()
 
     while (camType == 'USB') and (cam.grabbed == False):
         image = cam.read()
     
-    ids, rVecs, tVecs = arucoMarkers.getPositionVectors(image, markerLength, cameraMatrix, distCoeffs)
+    ids, rVecs, tVecs = arucoMarkers.getPositionVectors(image, 1, cameraMatrix, distCoeffs)
 
     poses = {}
     for markerId in markerIds:
         indexes = np.where(ids == markerId)[0]
         if indexes.size > 0:
             i = indexes[0]
-            coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)))
-            poses[MARKER_TO_OBJECT[str(markerId)]] = {'found': True,
-                                                      'pose':  {'roll':  coords[0],
-                                                                'pitch': coords[1],
-                                                                'yaw':   coords[2],
-                                                                'x':     coords[3],
-                                                                'y':     coords[4],
-                                                                'z':     coords[5]}}
+            coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), scale=MARKER_DESCRIPTION[str(markerId)]['length'])
+            poses[MARKER_DESCRIPTION[str(markerId)]['objectName']] = {'found': True,
+                                                                      'pose':  coords}
         else:
-            poses[MARKER_TO_OBJECT[str(markerId)]] = {'found': False}
+            poses[MARKER_DESCRIPTION[str(markerId)]['objectName']] = {'found': False}
 
     return poses
 
-def estimatePosesFromPivot(markerIds, pivotMarkerId, markerLength, cameraMatrix, distCoeffs, cam=None, camType=None, image=None):
+def estimatePosesFromPivot(markerIds, pivotMarkerId, cameraMatrix, distCoeffs, cam=None, camType=None, image=None):
     if image is None:
         image = cam.read()
 
         while (camType == 'USB') and (cam.grabbed == False):
             image = cam.read()
     
-    ids, rVecs, tVecs = arucoMarkers.getPositionVectors(image, markerLength, cameraMatrix, distCoeffs)
+    ids, rVecs, tVecs = arucoMarkers.getPositionVectors(image, 1, cameraMatrix, distCoeffs)
 
     indexes = np.where(ids == pivotMarkerId)[0]
 
@@ -51,10 +46,12 @@ def estimatePosesFromPivot(markerIds, pivotMarkerId, markerLength, cameraMatrix,
         pivotPose = calculateCoordinates(np.reshape(pivotRVec, (3,1)), np.reshape(pivotTVec, (3,1)))
 
         RT = getRMatrixFromVector(pivotRVec).T
+        hmdOffset = MARKER_DESCRIPTION[str(pivotMarkerId)]['offset']
 
-        hmdPose = calculateRelativePose(pivotPose, RT, np.zeros((1,3)), np.array([[HMD_OFFSET['x']],
-                                                                                  [HMD_OFFSET['y']],
-                                                                                  [HMD_OFFSET['z']]]))
+        hmdPose = calculateRelativePose(pivotPose, RT, np.zeros((1,3)), np.array([[hmdOffset['x']],
+                                                                                  [hmdOffset['y']],
+                                                                                  [hmdOffset['z']]]),
+                                        MARKER_DESCRIPTION[str(pivotMarkerId)]['length'], 1.0) # 1.0 because the offset is given in cm
 
         poses = {'hmd':          {'found': True,
                                   'pose':  hmdPose},
@@ -74,10 +71,13 @@ def estimatePosesFromPivot(markerIds, pivotMarkerId, markerLength, cameraMatrix,
                 markerRVec = rVecs[j]
                 markerTVec = tVecs[j]
 
-                relativeMarkerPose = calculateRelativePose(pivotPose, RT, markerRVec, markerTVec)
+                relativeMarkerPose = calculateRelativePose(pivotPose, RT, markerRVec, markerTVec, 
+                                                           MARKER_DESCRIPTION[str(pivotMarkerId)]['length'], 
+                                                           MARKER_DESCRIPTION[str(markerId)]['length'],
+                                                           offset=MARKER_DESCRIPTION[str(markerId)].get('offset', None))
 
-                poses[MARKER_TO_OBJECT[str(markerId)]] = {'found': True,
-                                                          'pose':  relativeMarkerPose}
+                poses[MARKER_DESCRIPTION[str(markerId)]['objectName']] = {'found': True,
+                                                                          'pose':  relativeMarkerPose}
         
         return poses
 

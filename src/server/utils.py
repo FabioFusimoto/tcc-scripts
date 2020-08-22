@@ -4,7 +4,7 @@ import numpy as np
 
 import src.calibration.arucoMarkers as arucoMarkers
 from src.calibration.commons import calculateCoordinates
-from src.server.objects import MARKER_TO_OBJECT
+from src.server.objects import MARKER_DESCRIPTION
 
 # Font parameters
 FONT = cv2.FONT_HERSHEY_SIMPLEX
@@ -14,7 +14,7 @@ SCALE = 1.0
 COLOR = (0,128,255)
 THICKNESS = 1
 
-def livePoseEstimation(markerId, markerLength, cameraMatrix, distCoeffs, cam, camType):
+def livePoseEstimation(markerId, cameraMatrix, distCoeffs, cam, camType):
     coords = {}
 
     while True:
@@ -24,13 +24,13 @@ def livePoseEstimation(markerId, markerLength, cameraMatrix, distCoeffs, cam, ca
             image = cam.read()
         
         corners, idsForCorners, _ = arucoMarkers.getCorners(image)
-        ids, rVecs, tVecs = arucoMarkers.getPositionVectors(image, markerLength, cameraMatrix, distCoeffs)
+        ids, rVecs, tVecs = arucoMarkers.getPositionVectors(image, 1, cameraMatrix, distCoeffs)
 
         indexes = np.where(ids == markerId)[0]
 
         if indexes.size > 0:
             i = indexes[0]
-            coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)))
+            coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), scale=MARKER_DESCRIPTION[str(markerId)]['length'])
 
             # Converting radians to degrees
             for c in ['roll', 'pitch', 'yaw']:
