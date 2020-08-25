@@ -63,7 +63,7 @@ def estimatePosesFromPivot(markerIds, pivotMarkerId, cameraMatrix, distCoeffs, c
                                                 'y':     0,
                                                 'z':     0}}}
 
-        for markerId in np.setdiff1d(ids, np.array([pivotMarkerId])): # check all ids, excluding the markerId
+        for markerId in markerIds:
             markerIdIndexes = np.where(ids == markerId)[0]
             
             if markerIdIndexes.size > 0:
@@ -81,5 +81,74 @@ def estimatePosesFromPivot(markerIds, pivotMarkerId, cameraMatrix, distCoeffs, c
         
         return poses
 
-    return {'hmd':              {'found': False},
-            str(pivotMarkerId): {'found': False}}
+    return {}
+
+def selectPivot(possiblePivotIds, foundMarkerIds):
+    # print('\n\n\n>>>>MARKERS FOUND: {}<<<'.format(foundMarkerIds))
+    # print('\n\n\n>>>>POSSIBLE PIVOTS: {}<<<'.format(possiblePivotIds))
+    for pivotId in possiblePivotIds:
+        if pivotId in foundMarkerIds:
+            return pivotId
+    
+    return None
+
+def estimatePosesFromMultiplePivots(markerIds, pivotPosesRelativeToReference, cameraMatrix, distCoeffs, cam=None, camType=None):
+    image = cam.read()
+
+    while (camType == 'USB') and (cam.grabbed == False):
+        image = cam.read()
+
+    ids, rVecs, tVecs = arucoMarkers.getPositionVectors(image, 1, cameraMatrix, distCoeffs)
+
+    if ids is None:
+        return {}
+
+    targetPivotId = selectPivot(pivotPosesRelativeToReference.keys(), list(map(str, ids)))
+
+    if targetPivotId is None: # Meaning no pivot was found on image
+        return {}
+    
+    # print('\n\n\n>>>>PIVOT FOUND: {}<<<'.format(targetPivotId))
+
+    indexes = np.where(ids == int(targetPivotId))[0]
+
+    if indexes.size > 0:
+        i = indexes[0]
+        pivotTVecRelativeToCamera = tVecs[i]
+        pivotRVecRelativeToCamera = rVecs[i]
+
+        pivotPoseRelativeToCamera = calculateCoordinates(np.reshape(pivotRVecRelativeToCamera, (3,1)), np.reshape(pivotTVecRelativeToCamera, (3,1)))
+
+        RTCameraRelativeToTargetPivot = getRMatrixFromVector(pivotRVecRelativeToCamera).T
+        hmdOffset = OBJECT_DESCRIPTION['hmd']['offset']
+
+        hmdPoseRelativeToTargetPivot = calculateRelativePose(pivotPoseRelativeToCamera, RTCameraRelativeToTargetPivot, np.zeros((1,3)), 
+                                                             np.array([[hmdOffset['x']],
+                                                                       [hmdOffset['y']],
+                                                                       [hmdOffset['z']]]),
+                                                             OBJECT_DESCRIPTION[str(targetPivotId)]['length'], 1.0) # 1.0 because the offset is given in cm
+
+        poses = {'hmd':              {'found': True,
+                                      'pose':  hmdPoseRelativeToTargetPivot},
+                 str(targetPivotId): {'found': True,
+                                      'pose':  pivotPosesRelativeToReference[targetPivotId]}}
+
+        for markerId in markerIds:
+            markerIdIndexes = np.where(ids == markerId)[0]
+            
+            if markerIdIndexes.size > 0:
+                j = markerIdIndexes[0]
+                markerRVec = rVecs[j]
+                markerTVec = tVecs[j]
+
+                markerPoseRelativeToTargetPivot = calculateRelativePose(pivotPoseRelativeToCamera, RTCameraRelativeToTargetPivot, markerRVec, markerTVec, 
+                                                                        OBJECT_DESCRIPTION[str(targetPivotId)]['length'], 
+                                                                        OBJECT_DESCRIPTION[str(markerId)]['length'],
+                                                                        offset=OBJECT_DESCRIPTION[str(markerId)].get('offset', None))
+
+                poses[str(markerId)] = {'found': True,
+                                        'pose':  markerPoseRelativeToTargetPivot}
+        
+        return poses
+
+    return {}

@@ -10,7 +10,7 @@ from tinydb import TinyDB, Query
 from src.calibration.commons import loadCalibrationCoefficients
 import src.webcamUtilities.video as webVideo
 import src.USBCam.video as USBVideo
-from src.server.coordinatesEstimation import estimatePoses, estimatePosesFromPivot
+from src.server.coordinatesEstimation import estimatePoses, estimatePosesFromPivot, estimatePosesFromMultiplePivots
 from src.server.coordinatesTransformation import posesToUnrealCoordinates, posesToUnrealCoordinatesFromPivot
 from src.server.databaseFunctions import saveCoordinates
 from src.server.objects import OBJECT_DESCRIPTION
@@ -40,7 +40,7 @@ else:
 db = TinyDB('db.json')
 Marker = Query()
 
-# Helper function - Session is used to store data between requests
+# Helper functions - Session is used to store data between requests
 def updateSession(newCoordinates):
     session.permanent = True
     for markerId, data in newCoordinates.items():
@@ -49,6 +49,16 @@ def updateSession(newCoordinates):
                 session['poses'].update({markerId: data['pose']})
             else:
                 session['poses'] = {markerId: data['pose']}
+
+def updateSessionFromDatabase():
+    session.permanent = True
+    for pivotPose in db:
+        markerId = pivotPose['markerId']
+        pivotPose.pop('markerId')
+        if 'pivotPoses' in session.keys():
+            session['pivotPoses'].update({markerId: pivotPose})
+        else:
+            session['pivotPoses'] = {markerId: pivotPose}
 
 @app.route('/')
 def home():
@@ -88,6 +98,14 @@ def clearPivots():
     db.truncate()
     return 'Database: ' + str(db.all())
 
+@app.route('/load-pivots')
+def loadPivots():
+    session.permanent = True
+
+    updateSessionFromDatabase()
+
+    return jsonify(session._get_current_object().get('pivotPoses', {}))
+
 @app.route('/pose-from-pivot')
 def getCoordinatesFromPivotPerspective():
     session.permanent = True
@@ -114,6 +132,25 @@ def getCoordinatesFromPivotPerspective():
     #     posesToPrint['marker_0']['z'] = pose['z']
 
     # pprint.pprint(posesToPrint)
+
+    unrealCoordinates = posesToUnrealCoordinatesFromPivot(poses)
+    updateSession(unrealCoordinates)
+
+    return jsonify(session._get_current_object().get('poses', {}))
+
+@app.route('/pose-from-multiple-pivots')
+def getPoseFromMultiplePivots():
+    session.permanent = True
+    markerIds = list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if ((k != 'hmd') and (OBJECT_DESCRIPTION[k]['objectType'] != 'pivot'))]))
+
+    knownPivotPoses = session._get_current_object().get('pivotPoses', {})
+    # print('\n\n\n----------------------\n>>>>KNOWN PIVOT POSES<<<')
+    # pprint.pprint(knownPivotPoses)
+
+    poses = estimatePosesFromMultiplePivots(markerIds, knownPivotPoses, cameraMatrix, distCoeffs, cam, camType)
+
+    # print('\n\n\n>>>>POSES ESTIMATED<<<')
+    # pprint.pprint(poses)
 
     unrealCoordinates = posesToUnrealCoordinatesFromPivot(poses)
     updateSession(unrealCoordinates)
@@ -161,6 +198,7 @@ def estimateLivePose():
 def clearPreviousSession():
     session.permanent = True
     session.clear()
+    _ = loadPivots()
 
 # On exit (Ctrl + C), we should stop the camera thread so the script stops as expected
 def exitHandler(signal, frame):
