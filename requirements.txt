@@ -1,4 +1,4 @@
 flask>=1.1.2
-matplotlib>=3.2.2
 numpy>=1.19.0
 opencv-python>=4.2.0.34
+tinydb>=4.1.1

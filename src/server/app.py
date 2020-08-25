@@ -5,22 +5,25 @@ import pprint
 import signal
 import sys
 from time import sleep
+from tinydb import TinyDB, Query
 
 from src.calibration.commons import loadCalibrationCoefficients
 import src.webcamUtilities.video as webVideo
 import src.USBCam.video as USBVideo
 from src.server.coordinatesEstimation import estimatePoses, estimatePosesFromPivot
 from src.server.coordinatesTransformation import posesToUnrealCoordinates, posesToUnrealCoordinatesFromPivot
-from src.server.objects import MARKER_DESCRIPTION
+from src.server.databaseFunctions import saveCoordinates
+from src.server.objects import OBJECT_DESCRIPTION
 from src.server.utils import livePoseEstimation
 
+# General App setup
 app = Flask(__name__)
 app.config['SECRET_KEY'] = b'SECRET_KEY'
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
-## Camera parameters and configuration
+# Camera parameters and configuration
 calibrationFile = 'src/server/files/J7-pro.yml'
 cameraMatrix, distCoeffs = loadCalibrationCoefficients(calibrationFile)
 
@@ -33,15 +36,19 @@ if camType == 'USB':
 else:
     cam = webVideo.ThreadedWebCam().start()
 
+# Database setup
+db = TinyDB('db.json')
+Marker = Query()
+
+# Helper function - Session is used to store data between requests
 def updateSession(newCoordinates):
+    session.permanent = True
     for markerId, data in newCoordinates.items():
         if data['found'] == True:
             if 'poses' in session.keys():
                 session['poses'].update({markerId: data['pose']})
             else:
                 session['poses'] = {markerId: data['pose']}
-    
-    session.permanent = True
 
 @app.route('/')
 def home():
@@ -50,7 +57,7 @@ def home():
 @app.route('/pose')
 def getCoordinates():
     session.permanent = True
-    markerIds = list(map(int, MARKER_DESCRIPTION.keys()))
+    markerIds = list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if k != 'hmd']))
 
     poses = estimatePoses(markerIds, cameraMatrix, distCoeffs, cam, camType)
     unrealCoordinates = posesToUnrealCoordinates(poses)
@@ -59,10 +66,32 @@ def getCoordinates():
 
     return jsonify(session._get_current_object().get('poses', {}))
 
+@app.route('/discover-pivots')
+def savePivotRelativePositions():
+    session.permanent = True
+    pivotMarkerIds = list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if OBJECT_DESCRIPTION[k]['objectType'] == 'pivot']))
+
+    # The reference is the coordinate system origin
+    referencePivotId = request.args.get('reference-pivot', default=3, type=int)
+
+    poses = estimatePosesFromPivot(pivotMarkerIds, referencePivotId, cameraMatrix, distCoeffs, cam)
+    saveCoordinates(db, poses, Marker)
+
+    updatedPivotCoords = db.all()
+
+    return jsonify(updatedPivotCoords)
+
+@app.route('/clear-pivots')
+def clearPivots():
+    session.permanent = True
+
+    db.truncate()
+    return 'Database: ' + str(db.all())
+
 @app.route('/pose-from-pivot')
 def getCoordinatesFromPivotPerspective():
     session.permanent = True
-    markerIds = list(map(int, MARKER_DESCRIPTION.keys()))
+    markerIds = list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if k != 'hmd']))
     pivotMarkerId = request.args.get('pivot', default=3, type=int)
     
     poses = estimatePosesFromPivot(markerIds, pivotMarkerId, cameraMatrix, distCoeffs, cam, camType)
@@ -94,7 +123,7 @@ def getCoordinatesFromPivotPerspective():
 @app.route('/pose-sequence')
 def getCoordinateSequence():
     session.permanent = True
-    markerIds = list(map(int, MARKER_DESCRIPTION.keys()))
+    markerIds = list(map(int, OBJECT_DESCRIPTION.keys()))
     pivotMarkerId = request.args.get('pivot', default=3, type=int)
     framesToCapture = request.args.get('count', default=60, type=int)
 

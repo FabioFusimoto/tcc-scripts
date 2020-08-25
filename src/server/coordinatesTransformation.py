@@ -1,4 +1,5 @@
 import math
+from src.server.objects import OBJECT_DESCRIPTION
 
 def transformationDictionary(pose, objectType):
     return {
@@ -58,10 +59,12 @@ def posesToUnrealCoordinates(poses):
 def posesToUnrealCoordinatesFromPivot(poses):
     unrealCoordinates = {}
     for objectId, data in poses.items():
+        objectName = OBJECT_DESCRIPTION[str(objectId)]['objectName']
+        objectType = OBJECT_DESCRIPTION[str(objectId)]['objectType']
         if data.get('found', False):
-            unrealCoordinates[objectId] = {'found': True,
-                                           'pose':  transformationDictionaryFromPivot(data['pose'], objectId)}
+            unrealCoordinates[objectName] = {'found': True,
+                                             'pose':  transformationDictionaryFromPivot(data['pose'], objectType)}
         else:
-            unrealCoordinates[objectId] = {'found': False}
+            unrealCoordinates[objectName] = {'found': False}
 
     return unrealCoordinates

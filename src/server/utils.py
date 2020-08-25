@@ -4,7 +4,7 @@ import numpy as np
 
 import src.calibration.arucoMarkers as arucoMarkers
 from src.calibration.commons import calculateCoordinates
-from src.server.objects import MARKER_DESCRIPTION
+from src.server.objects import OBJECT_DESCRIPTION
 
 # Font parameters
 FONT = cv2.FONT_HERSHEY_SIMPLEX
@@ -30,7 +30,7 @@ def livePoseEstimation(markerId, cameraMatrix, distCoeffs, cam, camType):
 
         if indexes.size > 0:
             i = indexes[0]
-            coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), scale=MARKER_DESCRIPTION[str(markerId)]['length'])
+            coords = calculateCoordinates(np.reshape(rVecs[i], (3,1)), np.reshape(tVecs[i], (3,1)), scale=OBJECT_DESCRIPTION[str(markerId)]['length'])
 
             # Converting radians to degrees
             for c in ['roll', 'pitch', 'yaw']:
