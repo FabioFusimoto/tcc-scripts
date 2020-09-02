@@ -3,7 +3,7 @@ import numpy as np
 import pprint
 
 import src.calibration.arucoMarkers as arucoMarkers
-from src.calibration.commons import calculateCoordinates, getRMatrixFromVector, calculateRelativePose
+from src.calibration.commons import calculateCoordinates, getRMatrixFromVector, getRMatrixFromEulerAngles, getRVectorFromEulerAngles, getEulerAnglesFromRVector, calculateRelativePose
 from src.server.objects import OBJECT_DESCRIPTION
 
 def estimatePoses(markerIds, cameraMatrix, distCoeffs, cam, camType):
@@ -31,6 +31,12 @@ def estimatePosesFromPivot(markerIds, pivotMarkerId, cameraMatrix, distCoeffs, c
     if image is None:
         image = cam.read()
 
+        # # Displaying the image
+        # while True:
+        #     cv2.imshow('Press Q to quit', image)
+        #     if cv2.waitKey(5) & 0xFF == ord('q'):
+        #         break
+
         while (camType == 'USB') and (cam.grabbed == False):
             image = cam.read()
     
@@ -53,15 +59,13 @@ def estimatePosesFromPivot(markerIds, pivotMarkerId, cameraMatrix, distCoeffs, c
                                                                                   [hmdOffset['z']]]),
                                         OBJECT_DESCRIPTION[str(pivotMarkerId)]['length'], 1.0) # 1.0 because the offset is given in cm
 
-        poses = {'hmd':              {'found': True,
-                                      'pose':  hmdPose},
-                 str(pivotMarkerId): {'found': True,
-                                      'pose':  {'roll':  0,
-                                                'pitch': 0,
-                                                'yaw':   0,
-                                                'x':     0,
-                                                'y':     0,
-                                                'z':     0}}}
+        poses = {'hmd':              hmdPose,
+                 str(pivotMarkerId): {'roll':  0,
+                                      'pitch': 0,
+                                      'yaw':   0,
+                                      'x':     0,
+                                      'y':     0,
+                                      'z':     0}}
 
         for markerId in markerIds:
             markerIdIndexes = np.where(ids == markerId)[0]
@@ -76,8 +80,7 @@ def estimatePosesFromPivot(markerIds, pivotMarkerId, cameraMatrix, distCoeffs, c
                                                            OBJECT_DESCRIPTION[str(markerId)]['length'],
                                                            offset=OBJECT_DESCRIPTION[str(markerId)].get('offset', None))
 
-                poses[str(markerId)] = {'found': True,
-                                        'pose':  relativeMarkerPose}
+                poses[str(markerId)] = relativeMarkerPose
         
         return poses
 
@@ -92,7 +95,12 @@ def selectPivot(possiblePivotIds, foundMarkerIds):
     
     return None
 
-def estimatePosesFromMultiplePivots(markerIds, pivotPosesRelativeToReference, cameraMatrix, distCoeffs, cam=None, camType=None):
+def estimatePosesFromMultiplePivots(markerIds, referencePosesRelativeToPivots, cameraMatrix, distCoeffs, cam=None, camType=None):
+    # print('\n\n\n----------------------\n>>>>KNOWN PIVOT POSES<<<')
+    # pprint.pprint(pivotPosesRelativeToReference)
+
+    np.set_printoptions(precision=4, suppress=True)
+
     image = cam.read()
 
     while (camType == 'USB') and (cam.grabbed == False):
@@ -103,12 +111,12 @@ def estimatePosesFromMultiplePivots(markerIds, pivotPosesRelativeToReference, ca
     if ids is None:
         return {}
 
-    targetPivotId = selectPivot(pivotPosesRelativeToReference.keys(), list(map(str, ids)))
+    targetPivotId = selectPivot(referencePosesRelativeToPivots.keys(), list(map(str, ids))) # Target is the one found on image
 
     if targetPivotId is None: # Meaning no pivot was found on image
         return {}
     
-    # print('\n\n\n>>>>PIVOT FOUND: {}<<<'.format(targetPivotId))
+    print('\n\n\n>>>>TARGET PIVOT FOUND: {}'.format(targetPivotId))
 
     indexes = np.where(ids == int(targetPivotId))[0]
 
@@ -119,35 +127,84 @@ def estimatePosesFromMultiplePivots(markerIds, pivotPosesRelativeToReference, ca
 
         pivotPoseRelativeToCamera = calculateCoordinates(np.reshape(pivotRVecRelativeToCamera, (3,1)), np.reshape(pivotTVecRelativeToCamera, (3,1)))
 
-        RTCameraRelativeToTargetPivot = getRMatrixFromVector(pivotRVecRelativeToCamera).T
+        RTTargetPivotRelativeToCamera = getRMatrixFromVector(pivotRVecRelativeToCamera).T
         hmdOffset = OBJECT_DESCRIPTION['hmd']['offset']
 
-        hmdPoseRelativeToTargetPivot = calculateRelativePose(pivotPoseRelativeToCamera, RTCameraRelativeToTargetPivot, np.zeros((1,3)), 
+        print('\n>>>HMD POSE RELATIVE TO TARGET PIVOT {}'.format(targetPivotId))
+
+        hmdPoseRelativeToTargetPivot = calculateRelativePose(pivotPoseRelativeToCamera, RTTargetPivotRelativeToCamera, np.zeros((1,3)), 
                                                              np.array([[hmdOffset['x']],
                                                                        [hmdOffset['y']],
                                                                        [hmdOffset['z']]]),
                                                              OBJECT_DESCRIPTION[str(targetPivotId)]['length'], 1.0) # 1.0 because the offset is given in cm
 
-        poses = {'hmd':              {'found': True,
-                                      'pose':  hmdPoseRelativeToTargetPivot},
-                 str(targetPivotId): {'found': True,
-                                      'pose':  pivotPosesRelativeToReference[targetPivotId]}}
+        print('')
+        pprint.pprint(hmdPoseRelativeToTargetPivot)
 
-        for markerId in markerIds:
-            markerIdIndexes = np.where(ids == markerId)[0]
+        referencePoseRelativeToTargetPivot = referencePosesRelativeToPivots[targetPivotId]
+        RTTargetPivotRelativeToReference = getRMatrixFromEulerAngles(referencePoseRelativeToTargetPivot['roll'],
+                                                                     referencePoseRelativeToTargetPivot['pitch'],
+                                                                     referencePoseRelativeToTargetPivot['yaw']).T
+
+        print('\n>>>>RT target pivot relative to reference:')
+        pprint.pprint(RTTargetPivotRelativeToReference)
+
+        hmdRVecRelativeToTargetPivot = getRVectorFromEulerAngles(hmdPoseRelativeToTargetPivot['roll'],
+                                                                 hmdPoseRelativeToTargetPivot['pitch'],
+                                                                 hmdPoseRelativeToTargetPivot['yaw'])
+
+        print('\n>>>HMD Rvec relative to target:')
+        pprint.pprint(hmdRVecRelativeToTargetPivot)
+
+        hmdEulerAnglesRelativeToTargetPivot = getEulerAnglesFromRVector(hmdRVecRelativeToTargetPivot)
+        print('\n>>>HMD Euler angles relative to target:')
+        pprint.pprint(hmdEulerAnglesRelativeToTargetPivot)
+
+        hmdTVecRelativeToTargetPivot = np.array([[hmdPoseRelativeToTargetPivot['x']],
+                                                 [hmdPoseRelativeToTargetPivot['y']],
+                                                 [hmdPoseRelativeToTargetPivot['z']]])
+
+        print('\n>>>HMD Tvec relative to target:')
+        pprint.pprint(hmdTVecRelativeToTargetPivot)
+
+        print('\n>>>HMD POSE RELATIVE TO REFERENCE PIVOT')
+
+        hmdPoseRelativeToReferencePivot = calculateRelativePose(referencePoseRelativeToTargetPivot, RTTargetPivotRelativeToReference,
+                                                                hmdRVecRelativeToTargetPivot, hmdTVecRelativeToTargetPivot,
+                                                                1.0, 1.0) # 1.0 because the scale has been previously applied
+
+        if str(targetPivotId) != '3':
+            for k in ['x', 'y', 'z']:
+                hmdPoseRelativeToReferencePivot[k] *= -1
+
+        print('')
+        pprint.pprint(hmdPoseRelativeToReferencePivot)
+
+        # difference = {}
+        # for k in hmdPoseRelativeToReferencePivot.keys():
+        #     difference[k] = abs(hmdPoseRelativeToReferencePivot[k] - hmdPoseRelativeToTargetPivot[k])
+        # print('\n\n\n>>>>DIFFERENCE:')
+        # pprint.pprint(difference)
+
+        poses = {'hmd': hmdPoseRelativeToReferencePivot}
+
+        # for markerId in markerIds:
+        #     markerIdIndexes = np.where(ids == markerId)[0]
             
-            if markerIdIndexes.size > 0:
-                j = markerIdIndexes[0]
-                markerRVec = rVecs[j]
-                markerTVec = tVecs[j]
+        #     if markerIdIndexes.size > 0:
+        #         j = markerIdIndexes[0]
+        #         markerRVec = rVecs[j]
+        #         markerTVec = tVecs[j]
 
-                markerPoseRelativeToTargetPivot = calculateRelativePose(pivotPoseRelativeToCamera, RTCameraRelativeToTargetPivot, markerRVec, markerTVec, 
-                                                                        OBJECT_DESCRIPTION[str(targetPivotId)]['length'], 
-                                                                        OBJECT_DESCRIPTION[str(markerId)]['length'],
-                                                                        offset=OBJECT_DESCRIPTION[str(markerId)].get('offset', None))
+        #         print('\n>>>MARKER {} POSE RELATIVE TO REFERENCE PIVOT'.format(markerId))
+        #         markerPoseRelativeToTargetPivot = calculateRelativePose(pivotPoseRelativeToCamera, RTTargetPivotRelativeToReference, markerRVec, markerTVec, 
+        #                                                                 OBJECT_DESCRIPTION[str(targetPivotId)]['length'], 
+        #                                                                 OBJECT_DESCRIPTION[str(markerId)]['length'],
+        #                                                                 offset=OBJECT_DESCRIPTION[str(markerId)].get('offset', None))
 
-                poses[str(markerId)] = {'found': True,
-                                        'pose':  markerPoseRelativeToTargetPivot}
+        #         markerPoseRelativeToReferencePivot = markerPoseRelativeToTargetPivot
+
+        #         poses[str(markerId)] = markerPoseRelativeToReferencePivot
         
         return poses
 

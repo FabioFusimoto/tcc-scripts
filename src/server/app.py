@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, Response, request, session
 import logging
 import math
+import numpy as np
 import pprint
 import signal
 import sys
@@ -32,7 +33,7 @@ camType = 'USB'
 cam = {}
 
 if camType == 'USB':
-    cam = USBVideo.USBCamVideoStream(camIndex=2).start()
+    cam = USBVideo.USBCamVideoStream(camIndex=1).start()
 else:
     cam = webVideo.ThreadedWebCam().start()
 
@@ -43,51 +44,64 @@ Marker = Query()
 # Helper functions - Session is used to store data between requests
 def updateSession(newCoordinates):
     session.permanent = True
-    for markerId, data in newCoordinates.items():
-        if data['found'] == True:
-            if 'poses' in session.keys():
-                session['poses'].update({markerId: data['pose']})
-            else:
-                session['poses'] = {markerId: data['pose']}
+    for markerId, markerPose in newCoordinates.items():
+        if 'markerPosesRelativeToReference' in session.keys():
+            session['markerPosesRelativeToReference'].update({markerId: markerPose})
+        else:
+            session['markerPosesRelativeToReference'] = {markerId: markerPose}
 
 def updateSessionFromDatabase():
     session.permanent = True
-    for pivotPose in db:
-        markerId = pivotPose['markerId']
-        pivotPose.pop('markerId')
-        if 'pivotPoses' in session.keys():
-            session['pivotPoses'].update({markerId: pivotPose})
+    for relativePose in db:
+        markerId = relativePose['markerId']
+        relation = relativePose['relation']
+        relativePose.pop('markerId')
+        relativePose.pop('relation')
+        if relation in session.keys():
+            session[relation].update({markerId: relativePose})
         else:
-            session['pivotPoses'] = {markerId: pivotPose}
+            session[relation] = {markerId: relativePose}
 
 @app.route('/')
 def home():
     return 'Homepage'
 
-@app.route('/pose')
-def getCoordinates():
-    session.permanent = True
-    markerIds = list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if k != 'hmd']))
-
-    poses = estimatePoses(markerIds, cameraMatrix, distCoeffs, cam, camType)
-    unrealCoordinates = posesToUnrealCoordinates(poses)
-
-    updateSession(unrealCoordinates)
-
-    return jsonify(session._get_current_object().get('poses', {}))
-
+# Pivot related routes
 @app.route('/discover-pivots')
-def savePivotRelativePositions():
+def getReferencePoseRelativeToPivot():
     session.permanent = True
-    pivotMarkerIds = list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if OBJECT_DESCRIPTION[k]['objectType'] == 'pivot']))
 
-    # The reference is the coordinate system origin
     referencePivotId = request.args.get('reference-pivot', default=3, type=int)
+    targetPivotId = request.args.get('target-pivot', default=5, type=int)
 
-    poses = estimatePosesFromPivot(pivotMarkerIds, referencePivotId, cameraMatrix, distCoeffs, cam)
-    saveCoordinates(db, poses, Marker)
+    # Initiliazing the database, knowing that the reference is on the origin
+    origin = {'x':     0,
+              'y':     0,
+              'z':     0,
+              'roll':  0,
+              'pitch': 0,
+              'yaw':   0}
+    saveCoordinates(db, str(referencePivotId), origin, 'referencePoseRelativeToPivot', Marker)
+    saveCoordinates(db, str(referencePivotId), origin, 'pivotPoseRelativeToReference', Marker)
+
+    # Getting the reference marker pose, written in pivot coordinates
+    poses = estimatePosesFromPivot([referencePivotId], targetPivotId, cameraMatrix, distCoeffs, cam)
+
+    referencePoseRelativeToTargetPivot = poses[str(referencePivotId)]
+    saveCoordinates(db, str(targetPivotId), referencePoseRelativeToTargetPivot, 'referencePoseRelativeToPivot', Marker)
+
+    # Getting the pivot marker poses, written in reference coordinates
+    poses = estimatePosesFromPivot([targetPivotId], referencePivotId, cameraMatrix, distCoeffs, cam)
+
+    targetPivotPoseRelativeToReference = poses[str(targetPivotId)]
+    saveCoordinates(db, str(targetPivotId), targetPivotPoseRelativeToReference, 'pivotPoseRelativeToReference', Marker)
 
     updatedPivotCoords = db.all()
+
+    for c in updatedPivotCoords:
+        c['roll'] *= 180/np.pi
+        c['pitch'] *= 180/np.pi
+        c['yaw'] *= 180/np.pi
 
     return jsonify(updatedPivotCoords)
 
@@ -104,7 +118,20 @@ def loadPivots():
 
     updateSessionFromDatabase()
 
-    return jsonify(session._get_current_object().get('pivotPoses', {}))
+    return jsonify(session._get_current_object())
+
+# Pose estimation related routes
+@app.route('/pose')
+def getCoordinates():
+    session.permanent = True
+    markerIds = list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if k != 'hmd']))
+
+    poses = estimatePoses(markerIds, cameraMatrix, distCoeffs, cam, camType)
+    unrealCoordinates = posesToUnrealCoordinates(poses)
+
+    updateSession(unrealCoordinates)
+
+    return jsonify(session._get_current_object().get('markerPosesRelativeToReference', {}))
 
 @app.route('/pose-from-pivot')
 def getCoordinatesFromPivotPerspective():
@@ -136,26 +163,25 @@ def getCoordinatesFromPivotPerspective():
     unrealCoordinates = posesToUnrealCoordinatesFromPivot(poses)
     updateSession(unrealCoordinates)
 
-    return jsonify(session._get_current_object().get('poses', {}))
+    return jsonify(session._get_current_object().get('markerPosesRelativeToReference', {}))
 
 @app.route('/pose-from-multiple-pivots')
 def getPoseFromMultiplePivots():
     session.permanent = True
-    markerIds = list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if ((k != 'hmd') and (OBJECT_DESCRIPTION[k]['objectType'] != 'pivot'))]))
+    markerIds = list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if ((k != 'hmd') and (OBJECT_DESCRIPTION[k]['objectType'] not in ['pivot', 'reference']))]))
 
-    knownPivotPoses = session._get_current_object().get('pivotPoses', {})
-    # print('\n\n\n----------------------\n>>>>KNOWN PIVOT POSES<<<')
-    # pprint.pprint(knownPivotPoses)
+    referencePosesRelativeToPivot = session._get_current_object().get('referencePoseRelativeToPivot', {})
+    markerPosesRelativeToReference = estimatePosesFromMultiplePivots(markerIds, referencePosesRelativeToPivot, cameraMatrix, distCoeffs, cam, camType)
 
-    poses = estimatePosesFromMultiplePivots(markerIds, knownPivotPoses, cameraMatrix, distCoeffs, cam, camType)
+    updateSession(markerPosesRelativeToReference)
 
-    # print('\n\n\n>>>>POSES ESTIMATED<<<')
-    # pprint.pprint(poses)
+    pivotPosesFromSession = session._get_current_object().get('pivotPoseRelativeToReference', {})
+    markerPosesFromSession = session._get_current_object().get('markerPosesRelativeToReference', {})
+    knownPoses = {**pivotPosesFromSession, **markerPosesFromSession} # merging the pivot poses and marker poses
 
-    unrealCoordinates = posesToUnrealCoordinatesFromPivot(poses)
-    updateSession(unrealCoordinates)
+    unrealCoordinates = posesToUnrealCoordinatesFromPivot(knownPoses)
 
-    return jsonify(session._get_current_object().get('poses', {}))
+    return jsonify(unrealCoordinates)
 
 @app.route('/pose-sequence')
 def getCoordinateSequence():

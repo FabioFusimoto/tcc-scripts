@@ -1,0 +1,64 @@
+>>>>TARGET PIVOT FOUND: 3
+
+>>>HMD POSE RELATIVE TO TARGET PIVOT 3
+
+CALCULATE RELATIVE POSE -> OBJECT TRANSLATION
+matrix([[ 5.3142],
+        [ 0.0025],
+        [-2.7855]])
+
+CALCULATE RELATIVE POSE -> REFERENCE TRANSLATION
+matrix([[-18.9155],
+        [  2.5846],
+        [-32.8817]])
+{'pitch': -0.48241302416830095,
+ 'roll': 3.0997377151824894,
+ 'x': 24.229684210265017,
+ 'y': -2.5821004282235513,
+ 'yaw': -0.019843604497011825,
+ 'z': 30.096147457472398}
+
+>>>>RT target pivot relative to reference:
+array([[1., 0., 0.],
+       [0., 1., 0.],
+       [0., 0., 1.]])
+
+>>>HMD Rvec relative to target:
+array([ 3.0064, -0.0453,  0.739 ])
+
+>>>HMD Euler angles relative to target:
+array([177.6019, -27.6402,  -1.137 ])
+
+>>>HMD Tvec relative to target:
+array([[24.2297],
+       [-2.5821],
+       [30.0961]])
+
+>>>HMD POSE RELATIVE TO REFERENCE PIVOT
+
+CALCULATE RELATIVE POSE -> OBJECT TRANSLATION
+array([[24.2297],
+       [-2.5821],
+       [30.0961]])
+
+CALCULATE RELATIVE POSE -> REFERENCE TRANSLATION
+array([[0.],
+       [0.],
+       [0.]])
+
+{'pitch': -0.4824130241683009,
+ 'roll': 3.099737715182489,
+ 'x': 24.229684210265017,
+ 'y': -2.5821004282235513,
+ 'yaw': -0.019843604497011696,
+ 'z': 30.096147457472398}
+
+
+
+
+ {'pitch': -0.4899148321974526,
+ 'roll': 3.1010683163580013,
+ 'x': 24.368393671302954,
+ 'y': -2.6945706336768325,
+ 'yaw': -0.017419590495936818,
+ 'z': 29.759483865142695}

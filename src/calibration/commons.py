@@ -2,6 +2,7 @@ import cv2.cv2 as cv2
 import math
 import numpy as np
 import pprint
+from scipy.spatial.transform import Rotation
 
 # Checks if matrix is a valid rotation matrix
 def isRotationMatrix(R):
@@ -35,6 +36,18 @@ def getImageAndResize(sourceFile, scale):
 def getRMatrixFromVector(rVec):
     return np.matrix(cv2.Rodrigues(rVec)[0])
 
+def getRMatrixFromEulerAngles(roll, pitch, yaw):
+    r = Rotation.from_euler('xyz', [roll, pitch, yaw], degrees=False)
+    return r.as_matrix()
+
+def getRVectorFromEulerAngles(roll, pitch, yaw):
+    r = Rotation.from_euler('xyz', [roll, pitch, yaw], degrees=False)
+    return r.as_rotvec()
+
+def getEulerAnglesFromRVector(rVec):
+    r = Rotation.from_rotvec(rVec)
+    return r.as_euler('xyz', degrees=True)
+
 def calculateCoordinates(rVec, tVec, RFlip=None, scale=None, printCameraPosition=False):
     # Converting the rVector into Euler angles
     rMatrix = getRMatrixFromVector(rVec)
@@ -62,23 +75,30 @@ def calculateCoordinates(rVec, tVec, RFlip=None, scale=None, printCameraPosition
                 'z':     traZ[0] * scale}
 
 def calculateRelativePose(referencePose, RT, objectRVec, objectTVec, referenceLength, objectLength, offset=None):
+    np.set_printoptions(precision=4, suppress=True)
+    
     objectPose = calculateCoordinates(np.reshape(objectRVec, (3,1)), np.reshape(objectTVec, (3,1)))
 
     if offset is None:
-        markerTranslation = np.dot(RT, np.array([[objectPose['x'] * objectLength],
+        objectTranslation = np.dot(RT, np.array([[objectPose['x'] * objectLength],
                                                  [objectPose['y'] * objectLength],
                                                  [objectPose['z'] * objectLength]]))
     else:
-        markerTranslation = np.dot(RT, np.array([[objectPose['x'] * objectLength + offset['x']],
+        objectTranslation = np.dot(RT, np.array([[objectPose['x'] * objectLength + offset['x']],
                                                  [objectPose['y'] * objectLength + offset['y']],
                                                  [objectPose['z'] * objectLength + offset['z']]]))
     
+    print('\nCALCULATE RELATIVE POSE -> OBJECT TRANSLATION')
+    pprint.pprint(objectTranslation)
 
     referenceTranslation = np.dot(RT, np.array([[referencePose['x'] * referenceLength],
                                                 [referencePose['y'] * referenceLength],
                                                 [referencePose['z'] * referenceLength]]))
 
-    relativeTranslation = np.subtract(markerTranslation, referenceTranslation)
+    print('\nCALCULATE RELATIVE POSE -> REFERENCE TRANSLATION')
+    pprint.pprint(referenceTranslation)
+
+    relativeTranslation = np.subtract(objectTranslation, referenceTranslation)
 
     objRoll, objPitch, objYaw = rotationMatrixToEulerAngles(getRMatrixFromVector(objectRVec))
 
