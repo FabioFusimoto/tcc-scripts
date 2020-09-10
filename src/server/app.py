@@ -11,20 +11,26 @@ from tinydb import TinyDB, Query
 from src.calibration.commons import loadCalibrationCoefficients
 import src.webcamUtilities.video as webVideo
 import src.USBCam.video as USBVideo
-from src.server.coordinatesEstimation import estimatePoses, estimatePosesFromPivot, estimatePosesFromMultiplePivots, getCoordinateTransformationMatrixes, estimatePosesFromMultiplePivots2
+from src.server.coordinatesEstimation import estimatePoses, estimatePosesFromPivot, estimatePosesFromMultiplePivots, discoverReferencePoseRelativeToPivot
 from src.server.coordinatesTransformation import posesToUnrealCoordinates, posesToUnrealCoordinatesFromPivot
 from src.server.databaseFunctions import saveCoordinates
 from src.server.objects import OBJECT_DESCRIPTION
 from src.server.utils import livePoseEstimation
 
-# General App setup
+#####################
+# GENERAL APP SETUP #
+#####################
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = b'SECRET_KEY'
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
-# Camera parameters and configuration
+#######################################
+# CAMERA PARAMETERS AND CONFIGURATION #
+#######################################
+
 calibrationFile = 'src/server/files/J7-pro.yml'
 cameraMatrix, distCoeffs = loadCalibrationCoefficients(calibrationFile)
 
@@ -37,11 +43,30 @@ if camType == 'USB':
 else:
     cam = webVideo.ThreadedWebCam().start()
 
-# Database setup
+##################
+# DATABASE SETUP #
+##################
+
 db = TinyDB('db.json')
 Marker = Query()
 
-# Helper functions - Session is used to store data between requests
+####################
+# HELPER FUNCTIONS #
+####################
+
+@app.before_first_request
+def clearPreviousSession():
+    session.permanent = True
+    session.clear()
+    _ = loadPivots()
+
+# On exit (Ctrl + C), we should stop the camera thread so the script stops as expected
+def exitHandler(signal, frame):
+    cam.stop()
+    print('Cam stopped')
+    sys.exit(1)
+
+# Session is used to store data between requests
 def updateSession(newCoordinates):
     session.permanent = True
     for markerId, markerPose in newCoordinates.items():
@@ -62,11 +87,16 @@ def updateSessionFromDatabase():
         else:
             session[relation] = {markerId: relativePose}
 
+##############
+# HOME ROUTE #
+##############
 @app.route('/')
 def home():
     return 'Homepage'
 
-# Pivot related routes
+########################
+# PIVOT RELATED ROUTES #
+########################
 @app.route('/discover-pivots')
 def getReferencePoseRelativeToPivot():
     session.permanent = True
@@ -120,7 +150,10 @@ def loadPivots():
 
     return jsonify(session._get_current_object())
 
-# Pose estimation related routes
+##################################
+# POSE ESTIMATION RELATED ROUTES #
+##################################
+
 @app.route('/pose')
 def getCoordinates():
     session.permanent = True
@@ -141,25 +174,6 @@ def getCoordinatesFromPivotPerspective():
     
     poses = estimatePosesFromPivot(markerIds, pivotMarkerId, cameraMatrix, distCoeffs, cam, camType)
 
-    # posesToPrint = {'marker_0': {'roll': 0,
-    #                              'pitch': 0,
-    #                              'yaw': 0,
-    #                              'x': 0,
-    #                              'y': 0,
-    #                              'z': 0}}
-
-    # marker = poses.get('marker_0', {'found': False})
-    # if marker['found']:
-    #     pose = marker['pose']
-    #     posesToPrint['marker_0']['roll'] = math.degrees(pose['roll'])
-    #     posesToPrint['marker_0']['pitch'] = math.degrees(pose['pitch'])
-    #     posesToPrint['marker_0']['yaw'] = math.degrees(pose['yaw'])
-    #     posesToPrint['marker_0']['x'] = pose['x']
-    #     posesToPrint['marker_0']['y'] = pose['y']
-    #     posesToPrint['marker_0']['z'] = pose['z']
-
-    # pprint.pprint(posesToPrint)
-
     unrealCoordinates = posesToUnrealCoordinatesFromPivot(poses)
     updateSession(unrealCoordinates)
 
@@ -167,30 +181,12 @@ def getCoordinatesFromPivotPerspective():
 
 @app.route('/pose-from-multiple-pivots')
 def getPoseFromMultiplePivots():
-    session.permanent = True
-    markerIds = list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if ((k != 'hmd') and (OBJECT_DESCRIPTION[k]['objectType'] not in ['pivot', 'reference']))]))
-
-    referencePosesRelativeToPivot = session._get_current_object().get('referencePosesRelativeToPivot', {})
-    pivotPosesRelativeToReference = session._get_current_object().get('pivotPosesRelativeToReference', {})
-    markerPosesRelativeToReference = estimatePosesFromMultiplePivots(markerIds, referencePosesRelativeToPivot, pivotPosesRelativeToReference, cameraMatrix, distCoeffs, cam, camType)
-
-    updateSession(markerPosesRelativeToReference)
-
-    markerPosesFromSession = session._get_current_object().get('markerPosesRelativeToReference', {})
-    knownPoses = {**pivotPosesRelativeToReference, **markerPosesFromSession} # merging the pivot poses and marker poses
-
-    unrealCoordinates = posesToUnrealCoordinatesFromPivot(knownPoses)
-
-    return jsonify(unrealCoordinates)
-
-@app.route('/pose-from-multiple-pivots-2')
-def getPoseFromMultiplePivots2():
     referenceId = request.args.get('reference', default=3, type=int)
     pivotMarkerId = request.args.get('pivot', default=7, type=int)
 
-    transformationParameters = getCoordinateTransformationMatrixes(pivotMarkerId, referenceId, cameraMatrix, distCoeffs, cam)
+    referencePoseRelativeToPivots = discoverReferencePoseRelativeToPivot(pivotMarkerId, referenceId, cameraMatrix, distCoeffs, cam)
 
-    poses = estimatePosesFromMultiplePivots2(['0'], [str(pivotMarkerId)], referenceId, transformationParameters, cameraMatrix, distCoeffs, cam=cam)
+    poses = estimatePosesFromMultiplePivots([], [str(pivotMarkerId)], referenceId, referencePoseRelativeToPivots, cameraMatrix, distCoeffs, cam=cam)
 
     return jsonify(poses)
 
@@ -231,17 +227,9 @@ def estimateLivePose():
 
     return jsonify(lastKnownCoords)
 
-@app.before_first_request
-def clearPreviousSession():
-    session.permanent = True
-    session.clear()
-    _ = loadPivots()
-
-# On exit (Ctrl + C), we should stop the camera thread so the script stops as expected
-def exitHandler(signal, frame):
-    cam.stop()
-    print('Cam stopped')
-    sys.exit(1)
+####################################
+# PARAMETERS FOR EXECUTING THE APP #
+####################################
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, exitHandler)
