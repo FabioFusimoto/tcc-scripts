@@ -2,6 +2,7 @@ import cv2.cv2 as cv2
 import math
 import numpy as np
 import pprint
+from scipy.spatial.transform import Rotation
 
 # Checks if matrix is a valid rotation matrix
 def isRotationMatrix(R):
@@ -35,6 +36,18 @@ def getImageAndResize(sourceFile, scale):
 def getRMatrixFromVector(rVec):
     return np.matrix(cv2.Rodrigues(rVec)[0])
 
+def getRMatrixFromEulerAngles(roll, pitch, yaw, degrees=False):
+    r = Rotation.from_euler('xyz', [roll, pitch, yaw], degrees=degrees)
+    return r.as_matrix()
+
+def getRVectorFromEulerAngles(roll, pitch, yaw, degrees=False):
+    r = Rotation.from_euler('xyz', [roll, pitch, yaw], degrees=degrees)
+    return r.as_rotvec()
+
+def getEulerAnglesFromRVector(rVec, degrees=False):
+    r = Rotation.from_rotvec(rVec)
+    return r.as_euler('xyz', degrees=degrees)
+
 def calculateCoordinates(rVec, tVec, RFlip=None, scale=None, printCameraPosition=False):
     # Converting the rVector into Euler angles
     rMatrix = getRMatrixFromVector(rVec)
@@ -61,33 +74,89 @@ def calculateCoordinates(rVec, tVec, RFlip=None, scale=None, printCameraPosition
                 'y':     traY[0] * scale, 
                 'z':     traZ[0] * scale}
 
-def calculateRelativePose(referencePose, RT, objectRVec, objectTVec, referenceLength, objectLength, offset=None):
-    objectPose = calculateCoordinates(np.reshape(objectRVec, (3,1)), np.reshape(objectTVec, (3,1)))
-
-    if offset is None:
-        markerTranslation = np.dot(RT, np.array([[objectPose['x'] * objectLength],
-                                                 [objectPose['y'] * objectLength],
-                                                 [objectPose['z'] * objectLength]]))
-    else:
-        markerTranslation = np.dot(RT, np.array([[objectPose['x'] * objectLength + offset['x']],
-                                                 [objectPose['y'] * objectLength + offset['y']],
-                                                 [objectPose['z'] * objectLength + offset['z']]]))
+def calculateRelativePoseFromVectors(objRVec, objTVec, tgtPose, RTSrcToTgt, scale=1.0, objOffset=None):
+    np.set_printoptions(precision=4, suppress=True)
     
+    objPose = calculateCoordinates(np.reshape(objRVec, (3,1)), np.reshape(objTVec, (3,1)), scale=scale)
 
-    referenceTranslation = np.dot(RT, np.array([[referencePose['x'] * referenceLength],
-                                                [referencePose['y'] * referenceLength],
-                                                [referencePose['z'] * referenceLength]]))
+    return calculateRelativePoseFromPose(objPose, tgtPose, RTSrcToTgt, objOffset=objOffset)
 
-    relativeTranslation = np.subtract(markerTranslation, referenceTranslation)
+def calculateRelativePoseFromPose(objPose, tgtPose, RTSrcToTgt, objOffset=None):
+    np.set_printoptions(precision=4, suppress=True)
 
-    objRoll, objPitch, objYaw = rotationMatrixToEulerAngles(getRMatrixFromVector(objectRVec))
+    objTranslation = np.array([[objPose['x']],
+                               [objPose['y']],
+                               [objPose['z']]])
+    if objOffset is not None:
+        for k in ['x', 'y', 'z']:
+            objTranslation[k] += objOffset[k]
+    
+    print('\nCALCULATE RELATIVE POSE -> OBJECT TRANSLATION RELATIVE TO SOURCE [SOURCE COORDINATES]')
+    pprint.pprint(objTranslation)
 
-    return {'roll':  objRoll - referencePose['roll'],
-            'pitch': objPitch - referencePose['pitch'],
-            'yaw':   objYaw - referencePose['yaw'],
-            'x':     relativeTranslation.item((0,0)),
-            'y':     relativeTranslation.item((1,0)),
-            'z':     relativeTranslation.item((2,0))}
+    tgtTranslation = np.array([[tgtPose['x']],
+                               [tgtPose['y']],
+                               [tgtPose['z']]])
+
+    print('\nCALCULATE RELATIVE POSE -> TARGET TRANSLATION RELATIVE TO SOURCE [SOURCE COORDINATES]')
+    pprint.pprint(tgtTranslation)
+
+    objTranslationRelativeToTgt = np.subtract(objTranslation, tgtTranslation)
+
+    print('\nCALCULATE RELATIVE POSE -> OBJECT TRANSLATION RELATIVE TO TARGET [SOURCE COORDINATES]')
+    pprint.pprint(objTranslationRelativeToTgt)
+
+    objTranslationOnTgtCoordinates = np.dot(RTSrcToTgt, objTranslationRelativeToTgt)
+
+    print('\nCALCULATE RELATIVE POSE -> OBJECT TRANSLATION RELATIVE TO SOURCE [TARGET COORDINATES]')
+    pprint.pprint(objTranslationOnTgtCoordinates)
+
+    print('\n----------------------------------------\n')
+
+    objRoll, objPitch, objYaw = objPose['roll'], objPose['pitch'], objPose['yaw']
+
+    return {'roll':  objRoll - tgtPose['roll'],
+            'pitch': objPitch - tgtPose['pitch'],
+            'yaw':   objYaw - tgtPose['yaw'],
+            'x':     objTranslationOnTgtCoordinates.item(0),
+            'y':     objTranslationOnTgtCoordinates.item(1),
+            'z':     objTranslationOnTgtCoordinates.item(2)}
+
+def getTransformationMatrix(p, rotationOnly=False):
+    '''Returns a 4x4 transformation matrix which converts coordinates between references'''
+    RT = getRMatrixFromEulerAngles(p['roll'], p['pitch'], p['yaw']).T # Rotation matrix
+
+    tra = np.dot(-RT, np.array([p['x'], p['y'], p['z']]))
+
+    if rotationOnly:
+        M = np.array([[RT.item((0,0)), RT.item((0,1)), RT.item((0,2)), 0],
+                      [RT.item((1,0)), RT.item((1,1)), RT.item((1,2)), 0],
+                      [RT.item((2,0)), RT.item((2,1)), RT.item((2,2)), 0],
+                      [             0,              0,              0, 1]])
+    else:
+        M = np.array([[RT.item((0,0)), RT.item((0,1)), RT.item((0,2)), tra.item(0)],
+                      [RT.item((1,0)), RT.item((1,1)), RT.item((1,2)), tra.item(1)],
+                      [RT.item((2,0)), RT.item((2,1)), RT.item((2,2)), tra.item(2)],
+                      [             0,              0,              0,           1]])
+ 
+    return M
+
+def transformCoordinates(tVec, M):
+    '''Returns the translation vector transformed into the target coordinate system'''
+    if isinstance(tVec, dict): # converting from dict to np.array if necessary
+        tVec = np.array([
+            tVec['x'],
+            tVec['y'],
+            tVec['z'],
+            1
+        ])
+
+    tVecT = tVec.T
+    product = np.dot(M, tVecT)
+
+    return {'x': product.item(0),
+            'y': product.item(1),
+            'z': product.item(2)}
 
 def saveCalibrationCoefficients(mtx, dist, path):
     """Save the camera matrix and the distortion coefficients to a given file"""

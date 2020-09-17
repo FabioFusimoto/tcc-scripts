@@ -37,13 +37,13 @@ def estimateMarkerPoseFromPivot(sourceFile, markersToEstimate, pivotMarkerId, ma
     np.set_printoptions(precision=4, suppress=True)
     pprint.pprint(poses)
 
-#createArucoGrid(2, 4, 'images/arucoGrid.jpg')
+createArucoGrid(2, 4, 'images/arucoGrid.jpg')
 
 #findMarkersOn('images/for-calibration/ARUZ50.jpg', 'images/calibration-output/ARUZ50_markers_found.jpg',
 #              True, 0.75)
 
-imageFiles = glob.glob('images/img*.jpg')
-calibrationFile = 'src/server/files/J7-pro.yml'
+#imageFiles = glob.glob('images/img*.jpg')
+#calibrationFile = 'src/server/files/J7-pro.yml'
 
 #for img in imageFiles:
 #    print('\nEstimating pose on ' + img.split('\\')[-1])
@@ -57,6 +57,6 @@ calibrationFile = 'src/server/files/J7-pro.yml'
 #    print('Saving coordinates to ' + outputFile)
 #    writeCoordinatesToCSV(img, outputFile, 0.75, [0, 1, 3], 3.78, calibrationFile)
 
-for img in imageFiles:
-    print('\n\n\n>>>>>Estimating pose on: ' + img + '<<<<<')
-    estimateMarkerPoseFromPivot(img, [], 3, 5.28, calibrationFile)
+#for img in imageFiles:
+#    print('\n\n\n>>>>>Estimating pose on: ' + img + '<<<<<')
+#    estimateMarkerPoseFromPivot(img, [], 3, 5.28, calibrationFile)
