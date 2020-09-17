@@ -122,21 +122,35 @@ def calculateRelativePoseFromPose(objPose, tgtPose, RTSrcToTgt, objOffset=None):
             'y':     objTranslationOnTgtCoordinates.item(1),
             'z':     objTranslationOnTgtCoordinates.item(2)}
 
-def getTransformationMatrix(p):
+def getTransformationMatrix(p, rotationOnly=False):
     '''Returns a 4x4 transformation matrix which converts coordinates between references'''
     RT = getRMatrixFromEulerAngles(p['roll'], p['pitch'], p['yaw']).T # Rotation matrix
 
     tra = np.dot(-RT, np.array([p['x'], p['y'], p['z']]))
 
-    M = np.array([[RT.item((0,0)), RT.item((0,1)), RT.item((0,2)), tra.item(0)],
-                  [RT.item((1,0)), RT.item((1,1)), RT.item((1,2)), tra.item(1)],
-                  [RT.item((2,0)), RT.item((2,1)), RT.item((2,2)), tra.item(2)],
-                  [             0,              0,              0,           1]])
+    if rotationOnly:
+        M = np.array([[RT.item((0,0)), RT.item((0,1)), RT.item((0,2)), 0],
+                      [RT.item((1,0)), RT.item((1,1)), RT.item((1,2)), 0],
+                      [RT.item((2,0)), RT.item((2,1)), RT.item((2,2)), 0],
+                      [             0,              0,              0, 1]])
+    else:
+        M = np.array([[RT.item((0,0)), RT.item((0,1)), RT.item((0,2)), tra.item(0)],
+                      [RT.item((1,0)), RT.item((1,1)), RT.item((1,2)), tra.item(1)],
+                      [RT.item((2,0)), RT.item((2,1)), RT.item((2,2)), tra.item(2)],
+                      [             0,              0,              0,           1]])
  
     return M
 
 def transformCoordinates(tVec, M):
     '''Returns the translation vector transformed into the target coordinate system'''
+    if isinstance(tVec, dict): # converting from dict to np.array if necessary
+        tVec = np.array([
+            tVec['x'],
+            tVec['y'],
+            tVec['z'],
+            1
+        ])
+
     tVecT = tVec.T
     product = np.dot(M, tVecT)
 
