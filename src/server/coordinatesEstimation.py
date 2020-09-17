@@ -288,7 +288,7 @@ def estimatePosesFromMultiplePivots(markerIds, pivotIds, referenceId, referenceP
                 referenceTranslationRelativeToMarkerOnMarkerCoords[k] = pivotTranslationRelativeToMarkerOnMarkerCoords[k] + referenceTranslationRelativeToPivotOnMarkerCoords[k]
 
             referenceRotationRelativeToMarker = {
-                'roll':  markerPoseRelativeToCamera['roll'] - referencePoseRelativeToCameraOnCameraCoords['roll'],
+                'roll':  -(markerPoseRelativeToCamera['roll'] - referencePoseRelativeToCameraOnCameraCoords['roll']),
                 'pitch': markerPoseRelativeToCamera['pitch'] - referencePoseRelativeToCameraOnCameraCoords['pitch'],
                 'yaw':   markerPoseRelativeToCamera['yaw'] - referencePoseRelativeToCameraOnCameraCoords['yaw'] 
             }
@@ -303,7 +303,7 @@ def estimatePosesFromMultiplePivots(markerIds, pivotIds, referenceId, referenceP
             markerTranslationRelativeToReference = transformCoordinates(np.array([0, 0, 0, 1]), MMarkerToReference)
 
             markerRotationRelativeToReference = {
-                'roll':  referenceRotationRelativeToMarker['roll'],
+                'roll':  -referenceRotationRelativeToMarker['roll'],
                 'pitch': referenceRotationRelativeToMarker['pitch'],
                 'yaw':   referenceRotationRelativeToMarker['yaw']
             }

@@ -3,7 +3,7 @@ from src.server.objects import OBJECT_DESCRIPTION
 
 def transformationDictionary(pose, objectType):
     return {
-        'marker': {'0_roll':  +pose['roll'] + 90,
+        'marker': {'0_roll':  -pose['roll'] + 90,
                    '1_pitch': +pose['yaw'],
                    '2_yaw':   -pose['pitch'] + 90,
                    '3_x':     +pose['z'],
