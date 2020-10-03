@@ -39,7 +39,7 @@ camType = 'USB'
 cam = {}
 
 if camType == 'USB':
-    cam = USBVideo.USBCamVideoStream(camIndex=1).start()
+    cam = USBVideo.USBCamVideoStream(camIndex=2).start()
 else:
     cam = webVideo.ThreadedWebCam().start()
 
@@ -176,7 +176,7 @@ def getCoordinatesFromPivotPerspective():
     
     poses = estimatePosesFromPivot(markerIds, pivotMarkerId, cameraMatrix, distCoeffs, cam, camType)
 
-    unrealCoordinates = posesToUnrealCoordinatesFromPivot(poses)
+    unrealCoordinates = posesToUnrealCoordinatesFromPivot(poses, 'test')
     updateSession(unrealCoordinates)
 
     return jsonify(session._get_current_object().get('markerPoseRelativeToReference', {}))
@@ -186,6 +186,7 @@ def getPoseFromMultiplePivots():
     session.permanent = True
 
     referenceId = request.args.get('reference', default=3, type=int)
+    context = request.args.get('context', default='test', type=str)
 
     referencePoseRelativeToPivots = session._get_current_object().get('referencePoseRelativeToPivot')
 
@@ -201,7 +202,7 @@ def getPoseFromMultiplePivots():
 
     allPoses = {**knownMarkerPoses, **knownPivotPoses}
 
-    unrealPoses = posesToUnrealCoordinatesFromPivot(allPoses)
+    unrealPoses = posesToUnrealCoordinatesFromPivot(allPoses, context)
 
     return jsonify(unrealPoses)
 
