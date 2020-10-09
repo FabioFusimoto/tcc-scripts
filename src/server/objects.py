@@ -1,9 +1,9 @@
 # The keys are the marker ids
 OBJECT_DESCRIPTION = {'0':   {'objectName': 'marker_0',
-                              'objectType': 'marker',
+                              'objectType': 'pivot',
                               'length':     5.28},
                       '1':   {'objectName': 'marker_1',
-                              'objectType': 'marker',
+                              'objectType': 'pivot',
                               'length':     5.28},
                       '2':   {'objectName': 'marker_2',
                               'objectType': 'marker',
