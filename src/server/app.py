@@ -39,7 +39,7 @@ camType = 'USB'
 cam = {}
 
 if camType == 'USB':
-    cam = USBVideo.USBCamVideoStream(camIndex=2).start()
+    cam = USBVideo.USBCamVideoStream(camIndex=1).start()
 else:
     cam = webVideo.ThreadedWebCam().start()
 

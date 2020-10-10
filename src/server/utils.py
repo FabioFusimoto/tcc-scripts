@@ -51,6 +51,8 @@ def livePoseEstimation(markerId, cameraMatrix, distCoeffs, cam, camType):
             cv2.imshow('Press Q to quit', image)
             if cv2.waitKey(5) & 0xFF == ord('q'):
                 break
+        else:
+            print('Marker not found')
     
     cv2.destroyAllWindows()
     return coords

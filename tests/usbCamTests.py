@@ -5,7 +5,7 @@ from timeit import default_timer as timer
 from src.USBCam.video import USBCamVideoStream as USBCam
 
 def savePictureFromVideo(filename, display=False):
-    cam = USBCam(camIndex=2).start()
+    cam = USBCam(camIndex=1).start()
     image = cam.read()
 
     try:
@@ -28,5 +28,5 @@ def takeMultiplePicturesFromVideo(filename, repetitions):
         input('Press to take a picture')
         savePictureFromVideo(filename + '-' + f'{i:0>2d}' + '.jpg', False)
 
-savePictureFromVideo('images/img_02.jpg', True)
-#takeMultiplePicturesFromVideo('images/for-calibration/J7-pro', 100)
+#savePictureFromVideo('images/img_02.jpg', True)
+takeMultiplePicturesFromVideo('tests/precision/images/720p-pitch-20', 3)
