@@ -33,8 +33,32 @@ def getImageAndResize(sourceFile, scale):
     sourceImage = cv2.imread(sourceFile)
     return cv2.resize(sourceImage, None, fx=scale, fy=scale)
 
-def getRMatrixFromVector(rVec):
-    return np.matrix(cv2.Rodrigues(rVec)[0])
+def getRMatrixFromVector(rVec, invert=False):
+    # return np.matrix(cv2.Rodrigues(rVec)[0])
+    r = Rotation.from_rotvec(rVec.reshape(3,))
+
+    if invert:
+        r = r.inv()
+
+    return r.as_matrix()
+
+def composeRotations(rVec1, rVec2, inversions=[False, False]):
+    r1 = Rotation.from_rotvec(rVec1.reshape(3,))
+    r2 = Rotation.from_rotvec(rVec2.reshape(3,))
+
+    if (inversions[0]):
+        r1 = r1.inv()
+    if (inversions[1]):
+        r2 = r2.inv()
+
+    rComposed = r1 * r2
+    rComposed = rComposed.as_euler('xyz')
+
+    return {
+        'roll': rComposed[0],
+        'pitch': rComposed[1],
+        'yaw': rComposed[2]
+    }
 
 def getRMatrixFromEulerAngles(roll, pitch, yaw, degrees=False):
     r = Rotation.from_euler('xyz', [roll, pitch, yaw], degrees=degrees)
@@ -45,6 +69,7 @@ def getRVectorFromEulerAngles(roll, pitch, yaw, degrees=False):
     return r.as_rotvec()
 
 def getEulerAnglesFromRVector(rVec, degrees=False):
+    rVec = rVec.reshape(3,)
     r = Rotation.from_rotvec(rVec)
     return r.as_euler('xyz', degrees=degrees)
 
@@ -157,6 +182,35 @@ def transformCoordinates(tVec, M):
     return {'x': product.item(0),
             'y': product.item(1),
             'z': product.item(2)}
+
+def inversePerspective(rVec, tVec, scale=1.0):
+    if all(vec.shape == (1,3) for vec in [rVec, tVec]):
+        rVec, tVec = rVec.reshape((3, 1)), tVec.reshape((3, 1))
+    R, _ = cv2.Rodrigues(rVec)
+    R = np.matrix(R).T
+    invRVec , _ = cv2.Rodrigues(R)
+    invTVec = np.dot(R, np.matrix(-tVec))
+
+    if scale != 1.0:
+        invTVec = np.dot(scale, invTVec)
+
+    return invRVec, invTVec
+
+def relativePosition(rVec1, tVec1, rVec2, tVec2, scale=1.0, asEuler=False):
+    if all(vec.shape == (1,3) for vec in [rVec1, tVec1]):
+        rVec1, tVec1 = rVec1.reshape((3, 1)), tVec1.reshape((3, 1))
+        rVec2, tVec2 = rVec2.reshape((3, 1)), tVec2.reshape((3, 1))
+
+    # Invert the second marker
+    invRVec, invTVec = inversePerspective(rVec2, tVec2)
+    vecComposition = cv2.composeRT(rVec1, tVec1, invRVec, invTVec)
+    relativeRotation, relativeTranslation = vecComposition[0], vecComposition[1]
+
+    relativeTranslation = np.dot(scale, relativeTranslation)
+    if asEuler:
+        relativeRotation = getEulerAnglesFromRVector(relativeRotation)
+
+    return relativeRotation, np.reshape(relativeTranslation, (3,))
 
 def saveCalibrationCoefficients(mtx, dist, path):
     """Save the camera matrix and the distortion coefficients to a given file"""

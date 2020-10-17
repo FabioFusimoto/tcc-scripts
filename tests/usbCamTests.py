@@ -28,5 +28,6 @@ def takeMultiplePicturesFromVideo(filename, repetitions):
         input('Press to take a picture')
         savePictureFromVideo(filename + '-' + f'{i:0>2d}' + '.jpg', False)
 
-#savePictureFromVideo('images/img_02.jpg', True)
-takeMultiplePicturesFromVideo('tests/precision/images/720p-pitch-20', 3)
+savePictureFromVideo('tests/precision/images/720p-consistency-4-reference-and-pivot.jpg', True)
+takeMultiplePicturesFromVideo('tests/precision/images/720p-consistency-4-sample', 3)
+# takeMultiplePicturesFromVideo('tests/precision/images/720p-consistency-5-sample', 3)
