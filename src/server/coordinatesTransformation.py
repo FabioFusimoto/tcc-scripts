@@ -11,14 +11,14 @@ def testContextTransformations(pose, objectType):
                       '4_y':     0,
                       '5_z':     0},
         'pivot':     {'0_roll':  +math.degrees(pose['roll']),
-                      '1_pitch': +math.degrees(pose['pitch']),
-                      '2_yaw':   +math.degrees(pose['yaw']),
+                      '1_pitch': -math.degrees(pose['pitch']),
+                      '2_yaw':   -math.degrees(pose['yaw']),
                       '3_x':     +pose['x'],
                       '4_y':     +pose['z'],
                       '5_z':     +pose['y']},
-        'hmd':       {'0_roll':  +math.degrees(pose['yaw']),
-                      '1_pitch': +math.degrees(pose['roll']) + 180,
-                      '2_yaw':   +math.degrees(pose['pitch']),
+        'hmd':       {'0_roll':  -math.degrees(pose['yaw']),
+                      '1_pitch': +math.degrees(pose['roll']) + 180, 
+                      '2_yaw':   -math.degrees(pose['pitch']),
                       '3_x':     +pose['x'],
                       '4_y':     +pose['z'],
                       '5_z':     +pose['y']},
@@ -37,9 +37,9 @@ def testContextTransformations(pose, objectType):
 
 def vidaEContextTransformations(pose, objectType):
     return {
-        'hmd': {'0_roll':  +math.degrees(pose['yaw']),
+        'hmd': {'0_roll':  -math.degrees(pose['yaw']),
                 '1_pitch': +math.degrees(pose['roll']) + 180,
-                '2_yaw':   +math.degrees(pose['pitch']),
+                '2_yaw':   -math.degrees(pose['pitch']),
                 '3_x':     +870 - pose['z'],
                 '4_y':      -50 + pose['x'],
                 '5_z':     +118 + pose['y']}

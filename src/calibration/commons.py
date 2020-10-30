@@ -184,7 +184,7 @@ def transformCoordinates(tVec, M):
             'z': product.item(2)}
 
 def inversePerspective(rVec, tVec, scale=1.0):
-    if all(vec.shape == (1,3) for vec in [rVec, tVec]):
+    if all(vec.shape != (3,1) for vec in [rVec, tVec]):
         rVec, tVec = rVec.reshape((3, 1)), tVec.reshape((3, 1))
     R, _ = cv2.Rodrigues(rVec)
     R = np.matrix(R).T
@@ -197,7 +197,7 @@ def inversePerspective(rVec, tVec, scale=1.0):
     return invRVec, invTVec
 
 def relativePosition(rVec1, tVec1, rVec2, tVec2, scale=1.0, asEuler=False):
-    if all(vec.shape == (1,3) for vec in [rVec1, tVec1]):
+    if all(vec.shape != (3,1) for vec in [rVec1, tVec1]):
         rVec1, tVec1 = rVec1.reshape((3, 1)), tVec1.reshape((3, 1))
         rVec2, tVec2 = rVec2.reshape((3, 1)), tVec2.reshape((3, 1))
 

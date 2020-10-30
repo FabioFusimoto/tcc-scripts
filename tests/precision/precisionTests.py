@@ -66,4 +66,4 @@ def testMultiple(tests, referenceMarkerId, pivotMarkerId, resolution, consistenc
     if 'consistency' in tests:
         consistencyTest(referenceMarkerId, pivotMarkerId, resolution, cameraMatrix, distortionCoefficients, consistencyRepetitions)
 
-testMultiple(['consistency'], 7, 3, '720p', 5)
+testMultiple(['pitch'], 7, 3, '2322p', 5)

@@ -28,7 +28,24 @@ def takeMultiplePicturesFromVideo(filename, repetitions):
         input('Press to take a picture')
         savePictureFromVideo(filename + '-' + f'{i:0>2d}' + '.jpg', False)
 
+def takePhotos(filePrefix, repetitions, offset):
+    cam = video.ThreadedWebCam().start()
+
+    for i in range(offset, offset + repetitions):
+        input('Press ENTER to take a picture')
+        image = cam.getPhoto()
+        filename = filePrefix + '-' + f'{i:0>2d}' + '.jpg'
+
+        try:
+            cv2.imwrite(filename, image, [cv2.IMWRITE_JPEG_QUALITY, 100])
+        except:
+            print('An error occurred while trying to create the image')
+            cam.stop()
+
+    cam.stop()
+
 # testPhotoSave(filename='images/for-calibration/VR_02.jpg', rotationType=cv2.ROTATE_90_CLOCKWISE)
 # multiplePhotoSave('images/for-calibration', 'X', 'jpg', 50)
 # testVideoStream()
-takeMultiplePicturesFromVideo('images/test-1280x720', 5)
+# takeMultiplePicturesFromVideo('images/test-1280x720', 5)
+takePhotos('tests/precision/images/2322p-pitch-30', 3, 0)

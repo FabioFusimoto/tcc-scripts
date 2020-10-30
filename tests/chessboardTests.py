@@ -38,8 +38,8 @@ def drawPositionVectors(imageSource, imageOutput, calibrationFile, squareSize, w
     cameraMatrix, distortionCoefficients = commons.loadCalibrationCoefficients(calibrationFile)
     chess.drawPositionVectors(imageSource, imageOutput, cameraMatrix, distortionCoefficients, squareSize, width, height, scale)
 
-getCoefficients('images/for-calibration', 'images/calibration-output', 'J7', 'jpg', 22.8/9, 6, 9, 1.0,
-                'tests/calibration-coefficients/J7-pro.yml') # measured 22.8cm - 9 squares
+getCoefficients('images/for-calibration', 'images/calibration-output', '4128x2322', 'jpg', 22.8/9, 6, 9, 1.0,
+                'tests/calibration-coefficients/J7-pro-4122x2322.yml') # measured 22.8cm - 9 squares
 
 #undistortImage('images/for-calibration/C11.jpg', 'images/calibration-output/C11-undistorted.jpg', 
 #               'tests/calibration-coefficients/g7-play-75-percent-resolution.yml', 0.75)

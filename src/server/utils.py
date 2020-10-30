@@ -12,7 +12,7 @@ INITIAL_POSITION = (10,100)
 POSITION_INCREMENT = 50
 SCALE = 1.0
 COLOR = (0,128,255)
-THICKNESS = 1
+THICKNESS = 2
 
 def livePoseEstimation(markerId, cameraMatrix, distCoeffs, cam, camType):
     coords = {}
@@ -39,13 +39,16 @@ def livePoseEstimation(markerId, cameraMatrix, distCoeffs, cam, camType):
             # Highlighting the found marker
             cv2.aruco.drawDetectedMarkers(image, corners, idsForCorners)
 
+            # Drawing the marker's axis
+            cv2.aruco.drawAxis(image, cameraMatrix, distCoeffs, rVecs[i], tVecs[i], 0.5)
+
             # Writing coordinates to image
-            cv2.putText(image, 'x: ' + '%3f' % coords['x'], INITIAL_POSITION, FONT, SCALE, COLOR, THICKNESS, cv2.LINE_AA)
-            cv2.putText(image, 'y: ' + '%3f' % coords['y'], (INITIAL_POSITION[0], INITIAL_POSITION[1] + 1 * POSITION_INCREMENT), FONT, SCALE, COLOR, THICKNESS, cv2.LINE_AA)
-            cv2.putText(image, 'z: ' + '%3f' % coords['z'], (INITIAL_POSITION[0], INITIAL_POSITION[1] + 2 * POSITION_INCREMENT), FONT, SCALE, COLOR, THICKNESS, cv2.LINE_AA)
-            cv2.putText(image, 'roll: ' + '%3f' % coords['roll'], (INITIAL_POSITION[0], INITIAL_POSITION[1] + 3 * POSITION_INCREMENT), FONT, SCALE, COLOR, THICKNESS, cv2.LINE_AA)
-            cv2.putText(image, 'pitch: ' + '%3f' % coords['pitch'], (INITIAL_POSITION[0], INITIAL_POSITION[1] + 4 * POSITION_INCREMENT), FONT, SCALE, COLOR, THICKNESS, cv2.LINE_AA)
-            cv2.putText(image, 'yaw: ' + '%3f' % coords['yaw'], (INITIAL_POSITION[0], INITIAL_POSITION[1] + 5 * POSITION_INCREMENT), FONT, SCALE, COLOR, THICKNESS, cv2.LINE_AA)
+            cv2.putText(image, 'x: ' + '%.2f' % coords['x'], INITIAL_POSITION, FONT, SCALE, COLOR, THICKNESS, cv2.LINE_AA)
+            cv2.putText(image, 'y: ' + '%.2f' % coords['y'], (INITIAL_POSITION[0], INITIAL_POSITION[1] + 1 * POSITION_INCREMENT), FONT, SCALE, COLOR, THICKNESS, cv2.LINE_AA)
+            cv2.putText(image, 'z: ' + '%.2f' % coords['z'], (INITIAL_POSITION[0], INITIAL_POSITION[1] + 2 * POSITION_INCREMENT), FONT, SCALE, COLOR, THICKNESS, cv2.LINE_AA)
+            cv2.putText(image, 'roll: ' + '%.2f' % coords['roll'], (INITIAL_POSITION[0], INITIAL_POSITION[1] + 3 * POSITION_INCREMENT), FONT, SCALE, COLOR, THICKNESS, cv2.LINE_AA)
+            cv2.putText(image, 'pitch: ' + '%.2f' % coords['pitch'], (INITIAL_POSITION[0], INITIAL_POSITION[1] + 4 * POSITION_INCREMENT), FONT, SCALE, COLOR, THICKNESS, cv2.LINE_AA)
+            cv2.putText(image, 'yaw: ' + '%.2f' % coords['yaw'], (INITIAL_POSITION[0], INITIAL_POSITION[1] + 5 * POSITION_INCREMENT), FONT, SCALE, COLOR, THICKNESS, cv2.LINE_AA)
 
             # Displaying the image
             cv2.imshow('Press Q to quit', image)
