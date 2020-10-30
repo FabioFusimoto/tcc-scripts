@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import csv
 import cv2.cv2 as cv2
+import math
 import numpy as np
 import pprint
 
@@ -156,3 +157,18 @@ def getHMDPoseDifference(pivotId, referenceId, referencePoseRelativeToPivot, cam
                                      (keys[3], differencesAsList[3]), (keys[4], differencesAsList[4]), (keys[5], differencesAsList[5])])
 
     return differencesAsDict
+
+def exportConsistencyResultsToFile(outputFile, samples):
+    header = ['Roll', 'Pitch', 'Yaw', 'X', 'Y', 'Z', 'Distancia Euclidiana']
+    rows = [header]
+
+    for s in samples:
+        for row in s:
+            differences = list(row.values())
+            euclieanDistance = math.sqrt(differences[3] ** 2 + differences[4] ** 2 + differences[5] ** 2)
+            differences.append(euclieanDistance)
+            rows.append(['%.3f' % diff for diff in differences])
+    
+    with open(outputFile, mode='w+', newline='') as resultsCSV:
+        writer = csv.writer(resultsCSV, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        writer.writerows(rows)

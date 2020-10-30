@@ -3,7 +3,8 @@ import math
 import pprint
 
 import src.calibration.commons as commons
-from tests.precision.helpers import discoverPivot, exportPrecisionResultsToFile, getHMDPoseDifference, markerPose 
+from tests.precision.helpers import discoverPivot, exportPrecisionResultsToFile, exportConsistencyResultsToFile, \
+                                    getHMDPoseDifference, markerPose 
 
 def precisionTest(markerId, resolution, field, expectedValue, cameraMatrix, distortionCoefficients, isAngle=False):
     imageFiles = glob.glob('tests/precision/images/{}-{}-{}*.jpg'.format(resolution, field, expectedValue))
@@ -52,8 +53,7 @@ def consistencyTest(referenceMarkerId, pivotMarkerId, resolution, cameraMatrix, 
         
         samples.append(differences)
 
-    print('\nSamples')
-    pprint.pprint(samples)
+    exportConsistencyResultsToFile('tests/precision/consistency-{}.csv'.format(resolution), samples)
 
 def testMultiple(tests, referenceMarkerId, pivotMarkerId, resolution, consistencyRepetitions):
     calibrationFile = 'tests/calibration-coefficients/J7-pro-{}.yml'.format(resolution)
@@ -66,4 +66,4 @@ def testMultiple(tests, referenceMarkerId, pivotMarkerId, resolution, consistenc
     if 'consistency' in tests:
         consistencyTest(referenceMarkerId, pivotMarkerId, resolution, cameraMatrix, distortionCoefficients, consistencyRepetitions)
 
-testMultiple(['pitch'], 7, 3, '2322p', 5)
+testMultiple(['consistency'], 7, 3, '2322p', 5)

@@ -28,6 +28,14 @@ def takeMultiplePicturesFromVideo(filename, repetitions):
         input('Press to take a picture')
         savePictureFromVideo(filename + '-' + f'{i:0>2d}' + '.jpg', False)
 
+def takePhoto(filename):
+    cam = video.ThreadedWebCam().start()
+
+    input('Press ENTER to take a picture')
+    cv2.imwrite(filename, cam.getPhoto(), [cv2.IMWRITE_JPEG_QUALITY, 100])
+
+    cam.stop()
+
 def takePhotos(filePrefix, repetitions, offset):
     cam = video.ThreadedWebCam().start()
 
@@ -48,4 +56,5 @@ def takePhotos(filePrefix, repetitions, offset):
 # multiplePhotoSave('images/for-calibration', 'X', 'jpg', 50)
 # testVideoStream()
 # takeMultiplePicturesFromVideo('images/test-1280x720', 5)
-takePhotos('tests/precision/images/2322p-pitch-30', 3, 0)
+takePhoto('tests/precision/images/2322p-consistency-1-reference-and-pivot.jpg')
+takePhotos('tests/precision/images/2322p-consistency-1-sample', 3, 0)
