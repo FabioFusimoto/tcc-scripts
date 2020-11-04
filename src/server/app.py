@@ -14,6 +14,7 @@ import src.USBCam.video as USBVideo
 from src.server.coordinatesEstimation import estimatePoses, estimatePosesFromPivot, estimatePosesFromMultiplePivots, discoverPivot
 from src.server.coordinatesTransformation import posesToUnrealCoordinates, posesToUnrealCoordinatesFromPivot
 from src.server.databaseFunctions import saveCoordinates
+from src.server.kalmanFilter import KalmanFilter
 from src.server.objects import OBJECT_DESCRIPTION
 from src.server.utils import livePoseEstimation
 
@@ -39,9 +40,18 @@ camType = 'USB'
 cam = {}
 
 if camType == 'USB':
-    cam = USBVideo.USBCamVideoStream(camIndex=2).start()
+    cam = USBVideo.USBCamVideoStream(camIndex=1).start()
 else:
     cam = webVideo.ThreadedWebCam().start()
+
+#######################
+# KALMAN FILTER SETUP #
+#######################
+
+processNoiseCov = 0.005
+measurementNoiseCov = 0.1
+frameRate = 30
+kalmanFilter = KalmanFilter(processNoiseCov, measurementNoiseCov, (1/frameRate))
 
 ##################
 # DATABASE SETUP #
@@ -194,6 +204,10 @@ def getPoseFromMultiplePivots():
     markerIds =  list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if OBJECT_DESCRIPTION[k]['objectType'] not in ['reference', 'pivot', 'hmd']]))
 
     posesFound = estimatePosesFromMultiplePivots(markerIds, pivotIds, referenceId, referencePoseRelativeToPivots, cameraMatrix, distCoeffs, cam=cam)
+
+    if 'hmd' in posesFound.keys():
+        kalmanFilter.correct(posesFound['hmd'])
+    posesFound['hmd'] = kalmanFilter.predict()
 
     updateSession(posesFound)
 
