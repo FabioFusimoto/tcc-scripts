@@ -79,3 +79,22 @@ class KalmanFilter():
             'yaw': predictionAsArray.item((11,0))
         }
 
+    def predictForMissingMeasurement(self):
+        measurementNoiseCov = self.kalman.measurementNoiseCov.copy()
+
+        highNoiseCov = cv2.setIdentity(self.kalman.measurementNoiseCov, 1e10)
+        setattr(self.kalman, 'measurementNoiseCov', highNoiseCov)
+
+        predictionAsArray = self.kalman.predict()
+        predictionAsDict = {
+            'x': predictionAsArray.item((0,0)),  
+            'y': predictionAsArray.item((1,0)),  
+            'z': predictionAsArray.item((2,0)),  
+            'roll': predictionAsArray.item((9,0)),  
+            'pitch': predictionAsArray.item((10,0)), 
+            'yaw': predictionAsArray.item((11,0))  
+        }
+
+        setattr(self.kalman, 'measurementNoiseCov', measurementNoiseCov)
+
+        return predictionAsDict

@@ -40,7 +40,7 @@ def plotPoints(X, Y, XLabel, YLabel):
     plt.show()
 
 def plotMultiple(X, Y1, Y1Legend, Y2, Y2Legend, XLabel, YLabel):
-    plt.plot(X, Y1, 'r.', X, Y2, 'b--', markersize=3)
+    plt.plot(X, Y1, 'r--', X, Y2, 'b--', markersize=3)
     Y1Patch = mpatches.Patch(color='red', label=Y1Legend)
     Y2Patch = mpatches.Patch(color='blue', label=Y2Legend)
     plt.legend(handles=[Y1Patch, Y2Patch])
