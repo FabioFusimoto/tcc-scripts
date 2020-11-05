@@ -207,7 +207,9 @@ def getPoseFromMultiplePivots():
 
     if 'hmd' in posesFound.keys():
         kalmanFilter.correct(posesFound['hmd'])
-    posesFound['hmd'] = kalmanFilter.predict()
+        posesFound['hmd'] = kalmanFilter.predict()
+    else:
+        posesFound['hmd'] = kalmanFilter.predictForMissingMeasurement()
 
     updateSession(posesFound)
 

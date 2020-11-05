@@ -33,9 +33,11 @@ def smoothnessGraph(markerId, sampleCount, processNoiseCovs, measurementNoiseCov
         cameraPositions = np.append(cameraPositions, newPosition, axis=0)
 
         for processNoise, measurementNoise, kalman in zip(processNoiseCovs, measurementNoiseCovs, kalmanArray):
-            if (not np.isnan(newPosition[0]).all()):
+            if (np.isnan(newPosition[0]).all()):
+                prediction = kalman.predictForMissingMeasurement()
+            else:
                 kalman.correct(newPosition[0])                
-            prediction = kalman.predict()
+                prediction = kalman.predict()
             filteredCameraPositions[(processNoise, measurementNoise)] = np.append(filteredCameraPositions[(processNoise, measurementNoise)], 
                                                                                   prediction[0])
             
@@ -54,7 +56,7 @@ def smoothnessGraph(markerId, sampleCount, processNoiseCovs, measurementNoiseCov
                      cameraPositions.T[0],
                      'Estimativa sem filtro',
                      filteredCameraPositions[(processNoise, measurementNoise)],
-                     'Estimativa com filtro - PNC = ' + str(processNoise) + '| MNC = ' + str(measurementNoise),
+                     'Estimativa com filtro', # - PNC = ' + str(processNoise) + '| MNC = ' + str(measurementNoise),
                      'Tempo (ms)',
                      'x (cm)')
 
@@ -65,7 +67,7 @@ kalmanFilterArray = [KalmanFilter(processNoise, measurementNoise, invertedFrameR
                      in zip(processNoiseCovMultipliers, measurementNoiseCovMultipliers)]
 
 try:
-    smoothnessGraph(3, 200, processNoiseCovMultipliers, measurementNoiseCovMultipliers, kalmanFilterArray)
+    smoothnessGraph(3, 100, processNoiseCovMultipliers, measurementNoiseCovMultipliers, kalmanFilterArray)
 except Exception as e:
     print('\nThe following exception occurred while sampling')
     print(''.join(traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__)))
