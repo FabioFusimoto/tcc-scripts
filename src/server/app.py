@@ -40,7 +40,7 @@ camType = 'USB'
 cam = {}
 
 if camType == 'USB':
-    cam = USBVideo.USBCamVideoStream(camIndex=1).start()
+    cam = USBVideo.USBCamVideoStream(camIndex=2).start()
 else:
     cam = webVideo.ThreadedWebCam().start()
 
@@ -116,6 +116,9 @@ def getReferencePoseRelativeToPivot():
 
     referencePivotId = request.args.get('reference-pivot', default=3, type=int)
     targetPivotId = request.args.get('target-pivot', default=5, type=int)
+    delay = request.args.get('delay', default=0, type=int)
+
+    sleep(delay)
 
     # Initiliazing the database, knowing that the reference is on the origin
     origin = {'x':     0,
@@ -169,24 +172,40 @@ def loadPivots():
 @app.route('/pose')
 def getCoordinates():
     session.permanent = True
+
+    context = request.args.get('context', default='test', type=str)
+
     markerIds = list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if k != 'hmd']))
 
     poses = estimatePoses(markerIds, cameraMatrix, distCoeffs, cam, camType)
-    unrealCoordinates = posesToUnrealCoordinates(poses)
 
-    updateSession(unrealCoordinates)
+    if '102' in poses.keys():
+        kalmanFilter.correct(poses['102'])
+        poses['102'] = kalmanFilter.predict()
+    else:
+        poses['102'] = kalmanFilter.predictForMissingMeasurement()
 
-    return jsonify(session._get_current_object().get('markerPoseRelativeToReference', {}))
+    unrealCoordinates = posesToUnrealCoordinates(poses, context)
+
+    return jsonify(unrealCoordinates)
 
 @app.route('/pose-from-pivot')
 def getCoordinatesFromPivotPerspective():
     session.permanent = True
     markerIds = list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if k != 'hmd']))
-    pivotMarkerId = request.args.get('pivot', default=3, type=int)
-    
-    poses = estimatePosesFromPivot(markerIds, pivotMarkerId, cameraMatrix, distCoeffs, cam, camType)
 
-    unrealCoordinates = posesToUnrealCoordinatesFromPivot(poses, 'test')
+    context = request.args.get('context', default='test', type=str)
+    pivotMarkerId = request.args.get('pivot', default=9, type=int)
+    
+    posesFound = estimatePosesFromPivot(markerIds, pivotMarkerId, cameraMatrix, distCoeffs, cam, camType)
+
+    if 'hmd' in posesFound.keys():
+        kalmanFilter.correct(posesFound['hmd'])
+        posesFound['hmd'] = kalmanFilter.predict()
+    else:
+        posesFound['hmd'] = kalmanFilter.predictForMissingMeasurement()
+
+    unrealCoordinates = posesToUnrealCoordinatesFromPivot(posesFound, context)
     updateSession(unrealCoordinates)
 
     return jsonify(session._get_current_object().get('markerPoseRelativeToReference', {}))

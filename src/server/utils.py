@@ -16,15 +16,18 @@ THICKNESS = 2
 
 def livePoseEstimation(markerId, cameraMatrix, distCoeffs, cam, camType):
     coords = {}
+    
+    markerNotFoundCount = 0
+    imagesWithoutMarker = []
 
     while True:
-        image = cam.read()
+        rawImage = cam.read()
         
         while (camType == 'USB') and (cam.grabbed == False):
-            image = cam.read()
+            rawImage = cam.read()
         
-        corners, idsForCorners, _ = arucoMarkers.getCorners(image)
-        ids, rVecs, tVecs = arucoMarkers.getPositionVectors(image, 1, cameraMatrix, distCoeffs)
+        corners, idsForCorners, _ = arucoMarkers.getCorners(rawImage)
+        ids, rVecs, tVecs = arucoMarkers.getPositionVectors(rawImage, 1, cameraMatrix, distCoeffs)
 
         indexes = np.where(ids == markerId)[0]
 
@@ -35,6 +38,9 @@ def livePoseEstimation(markerId, cameraMatrix, distCoeffs, cam, camType):
             # Converting radians to degrees
             for c in ['roll', 'pitch', 'yaw']:
                 coords[c] = math.degrees(coords[c])
+
+            # Copying the raw image to highlight corners and axis
+            image = rawImage.copy()
 
             # Highlighting the found marker
             cv2.aruco.drawDetectedMarkers(image, corners, idsForCorners)
@@ -55,7 +61,16 @@ def livePoseEstimation(markerId, cameraMatrix, distCoeffs, cam, camType):
             if cv2.waitKey(5) & 0xFF == ord('q'):
                 break
         else:
-            print('Marker not found')
+            markerNotFoundCount += 1
+            print('Marker not found. Count =', markerNotFoundCount)
+            if (markerNotFoundCount < 10):
+                imagesWithoutMarker.append(rawImage)
     
+    for image in imagesWithoutMarker:
+        cv2.imshow('Press Q to quit', image)
+        while True:
+            if cv2.waitKey(5) & 0xFF == ord('q'):
+                break
+
     cv2.destroyAllWindows()
     return coords

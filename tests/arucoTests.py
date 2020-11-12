@@ -7,9 +7,9 @@ import src.calibration.arucoMarkers as arucoMarkers
 import src.calibration.commons as commons
 from src.server.coordinatesEstimation import estimatePosesFromPivot
 
-def createArucoGrid(nx, ny, outputFile):
+def createArucoGrid(nx, ny, firstMarker, outputFile):
     print('It should generate a grid with size nx (width) x ny (height)')
-    arucoMarkers.generateMarkerGrid(nx, ny, outputFile)
+    arucoMarkers.generateMarkerGrid(nx, ny, firstMarker, outputFile)
 
 def findMarkersOn(sourceFile, outputFile, shouldSave, scale):
     print('Finding markers on ' + sourceFile)
@@ -37,7 +37,7 @@ def estimateMarkerPoseFromPivot(sourceFile, markersToEstimate, pivotMarkerId, ma
     np.set_printoptions(precision=4, suppress=True)
     pprint.pprint(poses)
 
-createArucoGrid(2, 4, 'images/arucoGrid.jpg')
+createArucoGrid(2, 5, 0, 'images/arucoGrid.jpg')
 
 #findMarkersOn('images/for-calibration/ARUZ50.jpg', 'images/calibration-output/ARUZ50_markers_found.jpg',
 #              True, 0.75)

@@ -30,13 +30,14 @@ def getMarkerRFlip():
 
     return RFlip
 
-def generateMarkerGrid(nx, ny, outputFile):
+def generateMarkerGrid(nx, ny, firstMarker, outputFile):
     # Create gridboard, which is a set of Aruco markers
     gridboard = cv2.aruco.GridBoard_create(
             markersX=nx, 
             markersY=ny, 
             markerLength=0.07, 
-            markerSeparation=0.01, 
+            markerSeparation=0.01,
+            firstMarker=firstMarker,
             dictionary=ARUCO_DICT)
     image = gridboard.draw(outSize=(988,1400))
     cv2.imwrite(outputFile, image)
