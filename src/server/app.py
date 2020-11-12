@@ -51,7 +51,8 @@ else:
 processNoiseCov = 0.005
 measurementNoiseCov = 0.1
 frameRate = 30
-kalmanFilter = KalmanFilter(processNoiseCov, measurementNoiseCov, (1/frameRate))
+cameraKalmanFilter = KalmanFilter(processNoiseCov, measurementNoiseCov, (1/frameRate))
+syringeKalmanFilter = KalmanFilter(processNoiseCov, measurementNoiseCov, (1/frameRate))
 
 ##################
 # DATABASE SETUP #
@@ -121,14 +122,14 @@ def getReferencePoseRelativeToPivot():
     sleep(delay)
 
     # Initiliazing the database, knowing that the reference is on the origin
-    origin = {'x':     0,
-              'y':     0,
-              'z':     0,
-              'roll':  0,
-              'pitch': 0,
-              'yaw':   0}
-    saveCoordinates(db, str(referencePivotId), origin, 'referencePoseRelativeToPivot', Marker)
-    saveCoordinates(db, str(referencePivotId), origin, 'pivotPoseRelativeToReference', Marker)
+    # origin = {'x':     0,
+    #           'y':     0,
+    #           'z':     0,
+    #           'roll':  0,
+    #           'pitch': 0,
+    #           'yaw':   0}
+    # saveCoordinates(db, str(referencePivotId), origin, 'referencePoseRelativeToPivot', Marker)
+    # saveCoordinates(db, str(referencePivotId), origin, 'pivotPoseRelativeToReference', Marker)
 
     # Getting the reference marker pose, written in pivot coordinates
     # and the pivot pose, written in reference coordinates
@@ -180,10 +181,10 @@ def getCoordinates():
     poses = estimatePoses(markerIds, cameraMatrix, distCoeffs, cam, camType)
 
     if '102' in poses.keys():
-        kalmanFilter.correct(poses['102'])
-        poses['102'] = kalmanFilter.predict()
+        syringeKalmanFilter.correct(poses['102'])
+        poses['102'] = syringeKalmanFilter.predict()
     else:
-        poses['102'] = kalmanFilter.predictForMissingMeasurement()
+        poses['102'] = syringeKalmanFilter.predictForMissingMeasurement()
 
     unrealCoordinates = posesToUnrealCoordinates(poses, context)
 
@@ -200,10 +201,17 @@ def getCoordinatesFromPivotPerspective():
     posesFound = estimatePosesFromPivot(markerIds, pivotMarkerId, cameraMatrix, distCoeffs, cam, camType)
 
     if 'hmd' in posesFound.keys():
-        kalmanFilter.correct(posesFound['hmd'])
-        posesFound['hmd'] = kalmanFilter.predict()
+        cameraKalmanFilter.correct(posesFound['hmd'])
+        posesFound['hmd'] = cameraKalmanFilter.predict()
     else:
-        posesFound['hmd'] = kalmanFilter.predictForMissingMeasurement()
+        posesFound['hmd'] = cameraKalmanFilter.predictForMissingMeasurement()
+
+    # Syringe pose
+    if '102' in posesFound.keys():
+        syringeKalmanFilter.correct(posesFound['102'])
+        posesFound['102'] = syringeKalmanFilter.predict()
+    else:
+        posesFound['102'] = syringeKalmanFilter.predictForMissingMeasurement()
 
     unrealCoordinates = posesToUnrealCoordinatesFromPivot(posesFound, context)
     updateSession(unrealCoordinates)
@@ -225,10 +233,10 @@ def getPoseFromMultiplePivots():
     posesFound = estimatePosesFromMultiplePivots(markerIds, pivotIds, referenceId, referencePoseRelativeToPivots, cameraMatrix, distCoeffs, cam=cam)
 
     if 'hmd' in posesFound.keys():
-        kalmanFilter.correct(posesFound['hmd'])
-        posesFound['hmd'] = kalmanFilter.predict()
+        cameraKalmanFilter.correct(posesFound['hmd'])
+        posesFound['hmd'] = cameraKalmanFilter.predict()
     else:
-        posesFound['hmd'] = kalmanFilter.predictForMissingMeasurement()
+        posesFound['hmd'] = cameraKalmanFilter.predictForMissingMeasurement()
 
     updateSession(posesFound)
 

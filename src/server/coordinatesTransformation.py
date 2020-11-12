@@ -22,12 +22,12 @@ def testContextTransformations(pose, objectType):
                       '3_x':     +pose['x'],
                       '4_y':     -pose['y'],
                       '5_z':     +pose['z']},
-        'syringe':   {'0_roll':  -math.degrees(pose['roll']) + 180,
-                      '1_pitch': +math.degrees(pose['yaw']),
-                      '2_yaw':   +math.degrees(pose['pitch']) + 180,
-                      '3_x':     +pose['x'],
-                      '4_y':     -pose['z'],
-                      '5_z':     -pose['y']},
+        'syringe':   {'0_roll':  +math.degrees(pose['roll']),
+                      '1_pitch': -math.degrees(pose['pitch']), # ok
+                      '2_yaw':   -math.degrees(pose['yaw']), 
+                      '3_x':     +pose['x'],  # ok
+                      '4_y':     -pose['y'],  # ok
+                      '5_z':     +pose['z']}, # ok
         'arm':       {'0_roll':  +90,
                       '1_pitch': 0,
                       '2_yaw':   +180,

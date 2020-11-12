@@ -81,6 +81,35 @@ def estimatePosesFromPivot(markerIds, pivotMarkerId, cameraMatrix, distCoeffs, c
                             'yaw': 0.0
                         }}
 
+        for markerId in markerIds:
+            indexes = np.where(ids == markerId)[0]
+            if indexes.size > 0:
+                i = indexes[0]
+
+                markerLength = OBJECT_DESCRIPTION[str(markerId)]['length']
+
+                markerRVecRelativeToCamera = rVecs[i]
+                markerTVecRelativeToCamera = np.dot(markerLength, tVecs[i])
+
+                markerRotationRelativeToReference, markerTranslationRelativeToReference = relativePosition(
+                    markerRVecRelativeToCamera,
+                    markerTVecRelativeToCamera,
+                    pivotRVecRelativeToCamera,
+                    pivotTVecRelativeToCamera,
+                    asEuler=True
+                )
+
+                markerPoseRelativeToReference = {
+                    'x': markerTranslationRelativeToReference[0],
+                    'y': markerTranslationRelativeToReference[1],
+                    'z': markerTranslationRelativeToReference[2],
+                    'roll': markerRotationRelativeToReference[0],
+                    'pitch': markerRotationRelativeToReference[1],
+                    'yaw': markerRotationRelativeToReference[2]
+                }
+
+                posesFound[str(markerId)] = markerPoseRelativeToReference
+
         return posesFound
 
     return {}
