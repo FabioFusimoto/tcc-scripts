@@ -43,6 +43,8 @@ class KalmanFilter():
 
         # Measurement Noise Covariance = R
         self.kalman.measurementNoiseCov = cv2.setIdentity(self.kalman.measurementNoiseCov, measurementNoiseCovMultiplier)
+
+        self.frameNotFoundCount = 0
     
     def printMatrixes(self):
         print('\nTransition Matrix (A)')
@@ -67,6 +69,7 @@ class KalmanFilter():
             dictOfPoints['yaw']
         ], dtype=np.float32)
         self.kalman.correct(pointsAsArray)
+        self.frameNotFoundCount = 0
 
     def predict(self):
         predictionAsArray = self.kalman.predict()
@@ -80,6 +83,8 @@ class KalmanFilter():
         }
 
     def predictForMissingMeasurement(self):
+        self.frameNotFoundCount += 1
+
         measurementNoiseCov = self.kalman.measurementNoiseCov.copy()
 
         highNoiseCov = cv2.setIdentity(self.kalman.measurementNoiseCov, 1e10)

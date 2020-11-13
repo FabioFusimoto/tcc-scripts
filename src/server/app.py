@@ -193,6 +193,8 @@ def getCoordinates():
 @app.route('/pose-from-pivot')
 def getCoordinatesFromPivotPerspective():
     session.permanent = True
+    frameNotFoundThreshold = 10
+
     markerIds = list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if k != 'hmd']))
 
     context = request.args.get('context', default='test', type=str)
@@ -200,18 +202,21 @@ def getCoordinatesFromPivotPerspective():
     
     posesFound = estimatePosesFromPivot(markerIds, pivotMarkerId, cameraMatrix, distCoeffs, cam, camType)
 
+    # HMD pose -> filter
     if 'hmd' in posesFound.keys():
         cameraKalmanFilter.correct(posesFound['hmd'])
         posesFound['hmd'] = cameraKalmanFilter.predict()
     else:
-        posesFound['hmd'] = cameraKalmanFilter.predictForMissingMeasurement()
+        if cameraKalmanFilter.frameNotFoundCount <= frameNotFoundThreshold:
+            posesFound['hmd'] = cameraKalmanFilter.predictForMissingMeasurement()
 
-    # Syringe pose
+    # Syringe pose -> filter
     if '102' in posesFound.keys():
         syringeKalmanFilter.correct(posesFound['102'])
         posesFound['102'] = syringeKalmanFilter.predict()
     else:
-        posesFound['102'] = syringeKalmanFilter.predictForMissingMeasurement()
+        if syringeKalmanFilter.frameNotFoundCount <= frameNotFoundThreshold:
+            posesFound['102'] = syringeKalmanFilter.predictForMissingMeasurement()
 
     unrealCoordinates = posesToUnrealCoordinatesFromPivot(posesFound, context)
     updateSession(unrealCoordinates)
@@ -221,6 +226,7 @@ def getCoordinatesFromPivotPerspective():
 @app.route('/pose-from-multiple-pivots')
 def getPoseFromMultiplePivots():
     session.permanent = True
+    frameNotFoundThreshold = 10
 
     referenceId = request.args.get('reference', default=9, type=int)
     context = request.args.get('context', default='test', type=str)
@@ -233,19 +239,21 @@ def getPoseFromMultiplePivots():
     posesFound = estimatePosesFromMultiplePivots(markerIds, pivotIds, referenceId, referencePoseRelativeToPivots, 
                                                  cameraMatrix, distCoeffs, cam=cam)
 
-    # HMD pose -> Filter
+    # HMD pose -> filter
     if 'hmd' in posesFound.keys():
         cameraKalmanFilter.correct(posesFound['hmd'])
         posesFound['hmd'] = cameraKalmanFilter.predict()
     else:
-        posesFound['hmd'] = cameraKalmanFilter.predictForMissingMeasurement()
+        if cameraKalmanFilter.frameNotFoundCount <= frameNotFoundThreshold:
+            posesFound['hmd'] = cameraKalmanFilter.predictForMissingMeasurement()
 
-    # Syringe pose -> Filter
+    # Syringe pose -> filter
     if '102' in posesFound.keys():
         syringeKalmanFilter.correct(posesFound['102'])
         posesFound['102'] = syringeKalmanFilter.predict()
     else:
-        posesFound['102'] = syringeKalmanFilter.predictForMissingMeasurement()
+        if syringeKalmanFilter.frameNotFoundCount <= frameNotFoundThreshold:
+            posesFound['102'] = syringeKalmanFilter.predictForMissingMeasurement()
 
     updateSession(posesFound)
 

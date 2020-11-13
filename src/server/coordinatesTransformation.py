@@ -43,12 +43,18 @@ def testContextTransformations(pose, objectType):
 
 def vidaEContextTransformations(pose, objectType):
     return {
-        'hmd': {'0_roll':  -math.degrees(pose['yaw']),
-                '1_pitch': +math.degrees(pose['roll']) + 180,
-                '2_yaw':   -math.degrees(pose['pitch']),
-                '3_x':     +815 + pose['y'],
-                '4_y':          + pose['x'],
-                '5_z':     +135 + pose['z']}
+        'hmd':       {'0_roll':  -math.degrees(pose['yaw']),
+                      '1_pitch': +math.degrees(pose['roll']) + 180,
+                      '2_yaw':   -math.degrees(pose['pitch']),
+                      '3_x':     +815 + pose['y'],
+                      '4_y':          + pose['x'],
+                      '5_z':     +135 + pose['z']},
+        'syringe':   {'0_roll':  +math.degrees(pose['roll']),
+                      '1_pitch': -math.degrees(pose['pitch']),
+                      '2_yaw':   -math.degrees(pose['yaw']) + 90, 
+                      '3_x':     +815 + pose['y'],
+                      '4_y':          + pose['x'],
+                      '5_z':     +135 + pose['z']},
     }.get(objectType, {'0_roll':  +math.degrees(pose['roll']),
                        '1_pitch': +math.degrees(pose['pitch']),
                        '2_yaw':   +math.degrees(pose['yaw']),

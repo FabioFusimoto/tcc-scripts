@@ -261,79 +261,41 @@ def estimatePosesFromMultiplePivots(markerIds, pivotIds, referenceId, referenceP
 
     posesFound = {'hmd': cameraPoseRelativeToReference}
 
-    # print('\nPIVOT POSE RELATIVE TO CAMERA')
-    # pprint.pprint(pivotPoseRelativeToCamera)
+    for markerId in markerIds:
+        indexes = np.where(ids == markerId)[0]
+        if indexes.size > 0:
+            i = indexes[0]
 
-    # for markerId in markerIds:
-    #     markerIdIndexes = np.where(ids == markerId)[0]
+            markerLength = OBJECT_DESCRIPTION[str(markerId)]['length']
+
+            markerRVecRelativeToCamera = rVecs[i]
+            markerTVecRelativeToCamera = np.dot(markerLength, tVecs[i])
+
+            markerRVecRelativeToPivot, markerTVecRelativeToPivot = relativePosition(
+                markerRVecRelativeToCamera,
+                markerTVecRelativeToCamera,
+                pivotRVecRelativeToCamera,
+                pivotTVecRelativeToCamera,
+                asEuler=False
+            )
             
-    #     if markerIdIndexes.size > 0:
-    #         # print('\nMARKER ID: {}'.format(markerId))
-
-    #         j = markerIdIndexes[0]
-    #         markerRVecRelativeToCamera = rVecs[j]
-    #         markerTVecRelativeToCamera = tVecs[j]
-    #         markerLength = OBJECT_DESCRIPTION[str(markerId)]['length']
-
-    #         markerPoseRelativeToCamera = calculateCoordinates(np.reshape(markerRVecRelativeToCamera, (3,1)), np.reshape(markerTVecRelativeToCamera, (3,1)), scale=markerLength)
-
-    #         # print('\nMARKER POSE RELATIVE TO CAMERA')
-    #         # pprint.pprint(markerPoseRelativeToCamera)
-
-    #         pivotTranslationRelativeToMarkerOnCameraCoords = {
-    #             'x': pivotPoseRelativeToCamera['x'] -  markerPoseRelativeToCamera['x'],
-    #             'y': pivotPoseRelativeToCamera['y'] -  markerPoseRelativeToCamera['y'],
-    #             'z': pivotPoseRelativeToCamera['z'] -  markerPoseRelativeToCamera['z']
-    #         }
-
-    #         # print('\nPIVOT TRANSLATION RELATIVE TO MARKER (ON CAMERA COORDS)')
-    #         # pprint.pprint(pivotTranslationRelativeToMarkerOnCameraCoords)
-
-    #         MCameraToMarker = getTransformationMatrix(markerPoseRelativeToCamera, rotationOnly = True)
-    #         pivotTranslationRelativeToMarkerOnMarkerCoords = transformCoordinates(pivotTranslationRelativeToMarkerOnCameraCoords, MCameraToMarker)
-
-    #         # print('\nPIVOT TRANSLATION RELATIVE TO MARKER (ON MARKER COORDS)')
-    #         # pprint.pprint(pivotTranslationRelativeToMarkerOnMarkerCoords)
-
-    #         referenceTranslationRelativeToPivotOnMarkerCoords = transformCoordinates(referenceTranslationRelativeToPivotOnCameraCoords, MCameraToMarker)
-
-    #         # print('\nREFERENCE TRANSLATION RELATIVE TO PIVOT (ON MARKER COORDS)')
-    #         # pprint.pprint(referenceTranslationRelativeToPivotOnMarkerCoords)
-
-    #         referenceTranslationRelativeToMarkerOnMarkerCoords = {}
+            markerRotationRelativeToReference, markerTranslationRelativeToReference = relativePosition(
+                markerRVecRelativeToPivot,
+                markerTVecRelativeToPivot,
+                referenceRVecRelativeToPivot,
+                referenceTVecRelativeToPivot,
+                asEuler=True
+            )
             
-    #         for k in ['x', 'y', 'z']:
-    #             referenceTranslationRelativeToMarkerOnMarkerCoords[k] = pivotTranslationRelativeToMarkerOnMarkerCoords[k] + referenceTranslationRelativeToPivotOnMarkerCoords[k]
+            markerPoseRelativeToReference = {
+                'x': markerTranslationRelativeToReference[0],
+                'y': markerTranslationRelativeToReference[1],
+                'z': markerTranslationRelativeToReference[2],
+                'roll': markerRotationRelativeToReference[0],
+                'pitch': markerRotationRelativeToReference[1],
+                'yaw': markerRotationRelativeToReference[2]
+            }
 
-    #         referenceRotationRelativeToMarker = {
-    #             'roll':  -(markerPoseRelativeToCamera['roll'] - referencePoseRelativeToCameraOnCameraCoords['roll']),
-    #             'pitch': markerPoseRelativeToCamera['pitch'] - referencePoseRelativeToCameraOnCameraCoords['pitch'],
-    #             'yaw':   markerPoseRelativeToCamera['yaw'] - referencePoseRelativeToCameraOnCameraCoords['yaw'] 
-    #         }
-
-    #         referencePoseRelativeToMarker = {**referenceTranslationRelativeToMarkerOnMarkerCoords, **referenceRotationRelativeToMarker}
-
-    #         # print('\nREFERENCE POSE RELATIVE TO MARKER (ON MARKER COORDS)')
-    #         # pprint.pprint(referencePoseRelativeToMarker)
-
-    #         MMarkerToReference = getTransformationMatrix(referencePoseRelativeToMarker)
-
-    #         markerTranslationRelativeToReference = transformCoordinates(np.array([0, 0, 0, 1]), MMarkerToReference)
-
-    #         markerRotationRelativeToReference = {
-    #             'roll':  -referenceRotationRelativeToMarker['roll'],
-    #             'pitch': referenceRotationRelativeToMarker['pitch'],
-    #             'yaw':   referenceRotationRelativeToMarker['yaw']
-    #         }
-
-    #         markerPoseRelativeToReference = {**markerTranslationRelativeToReference, **markerRotationRelativeToReference}
-
-    #         # print('\nMARKER POSE RELATIVE TO REFERENCE')
-    #         # pprint.pprint(markerPoseRelativeToReference)
-
-    #         posesFound[str(markerId)] = markerPoseRelativeToReference
-
-    # print('\nPOSES FOUND')
-    # pprint.pprint(posesFound)
+            posesFound[str(markerId)] = markerPoseRelativeToReference
 
     return posesFound
