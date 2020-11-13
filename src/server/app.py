@@ -115,7 +115,7 @@ def home():
 def getReferencePoseRelativeToPivot():
     session.permanent = True
 
-    referencePivotId = request.args.get('reference-pivot', default=3, type=int)
+    referencePivotId = request.args.get('reference-pivot', default=9, type=int)
     targetPivotId = request.args.get('target-pivot', default=5, type=int)
     delay = request.args.get('delay', default=0, type=int)
 
@@ -222,21 +222,30 @@ def getCoordinatesFromPivotPerspective():
 def getPoseFromMultiplePivots():
     session.permanent = True
 
-    referenceId = request.args.get('reference', default=3, type=int)
+    referenceId = request.args.get('reference', default=9, type=int)
     context = request.args.get('context', default='test', type=str)
 
     referencePoseRelativeToPivots = session._get_current_object().get('referencePoseRelativeToPivot')
 
-    pivotIds = list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if OBJECT_DESCRIPTION[k]['objectType'] in ['reference', 'pivot']]))
-    markerIds =  list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if OBJECT_DESCRIPTION[k]['objectType'] not in ['reference', 'pivot', 'hmd']]))
+    pivotIds = list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if OBJECT_DESCRIPTION[k]['objectType'] in ['arm', 'pivot']]))
+    markerIds =  list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if OBJECT_DESCRIPTION[k]['objectType'] not in ['arm', 'hmd', 'pivot']]))
 
-    posesFound = estimatePosesFromMultiplePivots(markerIds, pivotIds, referenceId, referencePoseRelativeToPivots, cameraMatrix, distCoeffs, cam=cam)
+    posesFound = estimatePosesFromMultiplePivots(markerIds, pivotIds, referenceId, referencePoseRelativeToPivots, 
+                                                 cameraMatrix, distCoeffs, cam=cam)
 
+    # HMD pose -> Filter
     if 'hmd' in posesFound.keys():
         cameraKalmanFilter.correct(posesFound['hmd'])
         posesFound['hmd'] = cameraKalmanFilter.predict()
     else:
         posesFound['hmd'] = cameraKalmanFilter.predictForMissingMeasurement()
+
+    # Syringe pose -> Filter
+    if '102' in posesFound.keys():
+        syringeKalmanFilter.correct(posesFound['102'])
+        posesFound['102'] = syringeKalmanFilter.predict()
+    else:
+        posesFound['102'] = syringeKalmanFilter.predictForMissingMeasurement()
 
     updateSession(posesFound)
 

@@ -46,9 +46,9 @@ def vidaEContextTransformations(pose, objectType):
         'hmd': {'0_roll':  -math.degrees(pose['yaw']),
                 '1_pitch': +math.degrees(pose['roll']) + 180,
                 '2_yaw':   -math.degrees(pose['pitch']),
-                '3_x':     +875 - pose['z'],
-                '4_y':      -10 + pose['x'],
-                '5_z':     +120 + pose['y']}
+                '3_x':     +815 + pose['y'],
+                '4_y':          + pose['x'],
+                '5_z':     +135 + pose['z']}
     }.get(objectType, {'0_roll':  +math.degrees(pose['roll']),
                        '1_pitch': +math.degrees(pose['pitch']),
                        '2_yaw':   +math.degrees(pose['yaw']),

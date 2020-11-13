@@ -134,27 +134,26 @@ def discoverPivot(targetPivotId, referenceId, cameraMatrix, distCoeffs, cam=None
     referenceIndex = referenceIndexes[0]
 
     # Pivot pose relative to camera
-    pivotRVec = rVecs[pivotIndex]
-    pivotTVec = tVecs[pivotIndex]
     pivotLength = OBJECT_DESCRIPTION[str(targetPivotId)]['length']
+    pivotRVec = rVecs[pivotIndex]
+    pivotTVec = np.dot(pivotLength, tVecs[pivotIndex])
+    
 
     # Reference pose relative to pivot coords
-    referenceRVec = rVecs[referenceIndex]
-    referenceTVec = tVecs[referenceIndex]
     referenceLength = OBJECT_DESCRIPTION[str(referenceId)]['length']
+    referenceRVec = rVecs[referenceIndex]
+    referenceTVec = np.dot(referenceLength, tVecs[referenceIndex])
 
     referenceRotationRelativeToPivot, referenceTranslationRelativeToPivot = relativePosition(referenceRVec, 
                                                                                              referenceTVec, 
                                                                                              pivotRVec,
                                                                                              pivotTVec, 
-                                                                                             scale=referenceLength, 
                                                                                              asEuler=True)
 
     pivotRotationRelativeToReference, pivotTranslationRelativeToReference = relativePosition(pivotRVec,
                                                                                              pivotTVec,
                                                                                              referenceRVec, 
-                                                                                             referenceTVec,                                                                                              
-                                                                                             scale=pivotLength, 
+                                                                                             referenceTVec,
                                                                                              asEuler=True)
 
     referencePoseRelativeToPivot = {
