@@ -5,7 +5,7 @@ import pprint
 import src.calibration.arucoMarkers as arucoMarkers
 from src.calibration.commons import calculateCoordinates, getRMatrixFromVector, getRMatrixFromEulerAngles, getRVectorFromEulerAngles, getEulerAnglesFromRVector, \
                                     calculateRelativePoseFromVectors, calculateRelativePoseFromPose, getTransformationMatrix, relativePosition, \
-                                    inversePerspective, transformCoordinates
+                                    inversePerspective, transformCoordinates, compensateForOffset, compensateForRotation
 from src.server.objects import OBJECT_DESCRIPTION
 
 def estimatePoses(markerIds, cameraMatrix, distCoeffs, cam, camType):
@@ -184,7 +184,7 @@ def selectPivot(possiblePivotIds, foundMarkerIds):
     return None
 
 def estimatePosesFromMultiplePivots(markerIds, pivotIds, referenceId, referencePoseRelativeToPivots, \
-                                    cameraMatrix, distCoeffs, cam=None, camType='USB'):
+                                    cameraMatrix, distCoeffs, lastKnownPoses={}, cam=None, camType='USB'):
     np.set_printoptions(precision=4, suppress=True)
 
     # print('\n\n\n\nReference pose relative to pivots')
@@ -197,12 +197,12 @@ def estimatePosesFromMultiplePivots(markerIds, pivotIds, referenceId, referenceP
     ids, rVecs, tVecs = arucoMarkers.getPositionVectors(image, 1, cameraMatrix, distCoeffs)
 
     if ids is None:
-        return {}
+        return 'Nenhum', {}
 
     targetPivotId = selectPivot(pivotIds, ids) # Target is the one found on image
 
     if targetPivotId is None: # Meaning no pivot was found on image
-        return {}
+        return 'Nenhum', {}
 
     # print('\nTarget pivot: {}'.format(targetPivotId))
 
@@ -210,12 +210,15 @@ def estimatePosesFromMultiplePivots(markerIds, pivotIds, referenceId, referenceP
     targetPivotIndexes = np.where(ids == int(targetPivotId))[0]
 
     if targetPivotIndexes.size == 0:
-        return {}
+        return 'Nenhum', {}
 
     targetPivotIndex = targetPivotIndexes[0]
 
+    hmdOffset = OBJECT_DESCRIPTION['hmd']['offset']
+
     pivotRVecRelativeToCamera = rVecs[targetPivotIndex]
     pivotTVecRelativeToCamera = np.dot(targetPivotLength, tVecs[targetPivotIndex])
+    pivotTVecRelativeToCamera = compensateForOffset(pivotTVecRelativeToCamera.copy(), hmdOffset)
 
     cameraRVecRelativeToPivot, cameraTVecRelativeToPivot = inversePerspective(pivotRVecRelativeToCamera, 
                                                                               pivotTVecRelativeToCamera)
@@ -259,7 +262,7 @@ def estimatePosesFromMultiplePivots(markerIds, pivotIds, referenceId, referenceP
         'yaw': cameraRotationRelativeToReference[2]
     }
 
-    posesFound = {'hmd': cameraPoseRelativeToReference}
+    posesFound = {'hmd': compensateForRotation(lastKnownPoses.get('hmd', {}), cameraPoseRelativeToReference)}
 
     for markerId in markerIds:
         indexes = np.where(ids == markerId)[0]
@@ -270,6 +273,7 @@ def estimatePosesFromMultiplePivots(markerIds, pivotIds, referenceId, referenceP
 
             markerRVecRelativeToCamera = rVecs[i]
             markerTVecRelativeToCamera = np.dot(markerLength, tVecs[i])
+            markerTVecRelativeToCamera = compensateForOffset(markerTVecRelativeToCamera.copy(), hmdOffset)
 
             markerRVecRelativeToPivot, markerTVecRelativeToPivot = relativePosition(
                 markerRVecRelativeToCamera,
@@ -286,7 +290,7 @@ def estimatePosesFromMultiplePivots(markerIds, pivotIds, referenceId, referenceP
                 referenceTVecRelativeToPivot,
                 asEuler=True
             )
-            
+
             markerPoseRelativeToReference = {
                 'x': markerTranslationRelativeToReference[0],
                 'y': markerTranslationRelativeToReference[1],
@@ -296,6 +300,6 @@ def estimatePosesFromMultiplePivots(markerIds, pivotIds, referenceId, referenceP
                 'yaw': markerRotationRelativeToReference[2]
             }
 
-            posesFound[str(markerId)] = markerPoseRelativeToReference
+            posesFound[str(markerId)] = compensateForRotation(lastKnownPoses.get(str(markerId), {}), markerPoseRelativeToReference)
 
-    return posesFound
+    return targetPivotId, posesFound

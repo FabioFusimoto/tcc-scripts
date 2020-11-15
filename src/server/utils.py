@@ -1,5 +1,6 @@
 import cv2.cv2 as cv2
 import math
+import matplotlib.pyplot as plt
 import numpy as np
 
 import src.calibration.arucoMarkers as arucoMarkers
@@ -74,3 +75,12 @@ def livePoseEstimation(markerId, cameraMatrix, distCoeffs, cam, camType):
 
     cv2.destroyAllWindows()
     return coords
+
+def plotPoints(timestamps, samples, xLabel, yLabel):
+    if len(timestamps) > 0 and len(samples) > 0:
+        plt.plot(timestamps, samples, 'ro')
+        plt.xlabel(xLabel)
+        plt.ylabel(yLabel)
+        plt.savefig('images/plot.png')
+    else:
+        print('\n>>> No points to plot <<<')

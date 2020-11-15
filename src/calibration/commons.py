@@ -212,6 +212,24 @@ def relativePosition(rVec1, tVec1, rVec2, tVec2, scale=1.0, asEuler=False):
 
     return relativeRotation, np.reshape(relativeTranslation, (3,))
 
+def compensateForOffset(tVec, offset):
+    tVec[0, 0] -= offset['x']
+    tVec[0, 1] -= offset['y']
+    tVec[0, 2] -= offset['z']
+
+    return tVec
+
+def compensateForRotation(previousPose, newPose):
+    if all (k in previousPose.keys() for k in ['roll', 'pitch', 'yaw']):
+        for k in ['roll', 'pitch', 'yaw']:
+            while abs(newPose[k] - previousPose[k]) > np.pi:
+                if (newPose[k] - previousPose[k]) < np.pi:
+                    newPose[k] += 2 * np.pi
+                elif (newPose[k] - previousPose[k]) > np.pi:
+                    newPose[k] -= 2 * np.pi
+
+    return newPose
+
 def saveCalibrationCoefficients(mtx, dist, path):
     """Save the camera matrix and the distortion coefficients to a given file"""
     cvFileHandler = cv2.FileStorage(path, flags=1)

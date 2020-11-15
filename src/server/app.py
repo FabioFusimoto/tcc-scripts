@@ -5,7 +5,7 @@ import numpy as np
 import pprint
 import signal
 import sys
-from time import sleep
+from time import sleep, time
 from tinydb import TinyDB, Query
 
 from src.calibration.commons import loadCalibrationCoefficients
@@ -13,15 +13,14 @@ import src.webcamUtilities.video as webVideo
 import src.USBCam.video as USBVideo
 from src.server.coordinatesEstimation import estimatePoses, estimatePosesFromPivot, estimatePosesFromMultiplePivots, discoverPivot
 from src.server.coordinatesTransformation import posesToUnrealCoordinates, posesToUnrealCoordinatesFromPivot
-from src.server.databaseFunctions import saveCoordinates
+from src.server.databaseFunctions import saveCoordinates, fetchPivotPoses, clearPivotsFromDatabase, fetchPoseWithTimestamp, clearGraphicsPointsFromDatabase
 from src.server.kalmanFilter import KalmanFilter
 from src.server.objects import OBJECT_DESCRIPTION
-from src.server.utils import livePoseEstimation
+from src.server.utils import livePoseEstimation, plotPoints
 
 #####################
 # GENERAL APP SETUP #
 #####################
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = b'SECRET_KEY'
 
@@ -31,7 +30,6 @@ log.setLevel(logging.ERROR)
 #######################################
 # CAMERA PARAMETERS AND CONFIGURATION #
 #######################################
-
 calibrationFile = 'src/server/files/J7-pro.yml'
 cameraMatrix, distCoeffs = loadCalibrationCoefficients(calibrationFile)
 
@@ -40,14 +38,13 @@ camType = 'USB'
 cam = {}
 
 if camType == 'USB':
-    cam = USBVideo.USBCamVideoStream(camIndex=2).start()
+    cam = USBVideo.USBCamVideoStream(camIndex=1).start()
 else:
     cam = webVideo.ThreadedWebCam().start()
 
 #######################
 # KALMAN FILTER SETUP #
 #######################
-
 processNoiseCov = 0.005
 measurementNoiseCov = 0.1
 frameRate = 30
@@ -57,22 +54,17 @@ syringeKalmanFilter = KalmanFilter(processNoiseCov, measurementNoiseCov, (1/fram
 ##################
 # DATABASE SETUP #
 ##################
-
 db = TinyDB('db.json')
 Marker = Query()
 
 ####################
 # HELPER FUNCTIONS #
 ####################
-
 @app.before_first_request
 def clearPreviousSession():
     session.permanent = True
     session.clear()
     _ = loadPivots()
-
-    print('First request done. Session:')
-    print(session._get_current_object())
 
 # On exit (Ctrl + C), we should stop the camera thread so the script stops as expected
 def exitHandler(signal, frame):
@@ -80,6 +72,9 @@ def exitHandler(signal, frame):
     print('\nCam stopped\n')
     sys.exit(1)
 
+#####################
+# SESSION FUNCTIONS #
+#####################
 # Session is used to store data between requests
 def updateSession(newCoordinates):
     session.permanent = True
@@ -91,15 +86,43 @@ def updateSession(newCoordinates):
 
 def updateSessionFromDatabase():
     session.permanent = True
-    for relativePose in db:
-        markerId = relativePose['markerId']
-        relation = relativePose['relation']
-        relativePose.pop('markerId')
-        relativePose.pop('relation')
-        if relation in session.keys():
-            session[relation].update({markerId: relativePose})
-        else:
-            session[relation] = {markerId: relativePose}
+    posesOnDatabase = fetchPivotPoses(db, Marker)
+    for relativePose in posesOnDatabase:
+        if ('markerId' in relativePose.keys()) and ('relation' in relativePose.keys()): 
+            markerId = relativePose['markerId']
+            relation = relativePose['relation']
+            relativePose.pop('markerId')
+            relativePose.pop('relation')
+            if relation in session.keys():
+                session[relation].update({markerId: relativePose})
+            else:
+                session[relation] = {markerId: relativePose}
+
+def saveGraphicsPointsToSession(pivotId, hmdPose):
+    if 'poseWithTimestamp' not in session.keys():
+        session['poseWithTimestamp'] = []
+    session['poseWithTimestamp'].append({
+        'type': 'poseWithTimestamp',
+        'timestamp': round(time() * 1000),
+        'markerId': pivotId,
+        'pose': hmdPose
+    })
+
+######################
+# DATABASE FUNCTIONS #
+######################
+def saveGraphicsPointsToDatabase():
+    session.permanent = True
+    clearGraphicsPointsFromDatabase(db, Marker)
+
+    for sample in session._get_current_object().get('poseWithTimestamp', []):
+        db.insert(sample)
+
+    return len(session._get_current_object().get('poseWithTimestamp', []))
+
+def clearGraphicsPoints():
+    session.permanent = True
+    clearGraphicsPointsFromDatabase(db, Marker)
 
 ##############
 # HOME ROUTE #
@@ -116,33 +139,26 @@ def getReferencePoseRelativeToPivot():
     session.permanent = True
 
     referencePivotId = request.args.get('reference-pivot', default=9, type=int)
-    targetPivotId = request.args.get('target-pivot', default=5, type=int)
+    targetPivotIds = request.args.get('target-pivots', default=5, type=str)
     delay = request.args.get('delay', default=0, type=int)
+
+    targetPivotIds = targetPivotIds.split(',')
 
     sleep(delay)
 
-    # Initiliazing the database, knowing that the reference is on the origin
-    # origin = {'x':     0,
-    #           'y':     0,
-    #           'z':     0,
-    #           'roll':  0,
-    #           'pitch': 0,
-    #           'yaw':   0}
-    # saveCoordinates(db, str(referencePivotId), origin, 'referencePoseRelativeToPivot', Marker)
-    # saveCoordinates(db, str(referencePivotId), origin, 'pivotPoseRelativeToReference', Marker)
-
     # Getting the reference marker pose, written in pivot coordinates
     # and the pivot pose, written in reference coordinates
-    referencePoseRelativeToPivot, pivotPoseRelativeToReference = discoverPivot(targetPivotId, referencePivotId, cameraMatrix, distCoeffs, cam)
+    for targetPivotId in targetPivotIds:
+        referencePoseRelativeToPivot, pivotPoseRelativeToReference = discoverPivot(targetPivotId, referencePivotId, cameraMatrix, distCoeffs, cam)
 
-    saveCoordinates(db, str(targetPivotId), referencePoseRelativeToPivot, 'referencePoseRelativeToPivot', Marker)
-    saveCoordinates(db, str(targetPivotId), pivotPoseRelativeToReference, 'pivotPoseRelativeToReference', Marker)
+        saveCoordinates(db, str(targetPivotId), referencePoseRelativeToPivot, 'referencePoseRelativeToPivot', Marker)
+        saveCoordinates(db, str(targetPivotId), pivotPoseRelativeToReference, 'pivotPoseRelativeToReference', Marker)
 
     # Update the session acordingly
     updateSessionFromDatabase()
 
-    # Return the whole database
-    updatedPivotCoords = db.all()
+    # Return all known marker poses relative to reference
+    updatedPivotCoords = fetchPivotPoses(db, Marker)
 
     for c in updatedPivotCoords:
         c['roll'] *= 180/np.pi
@@ -154,22 +170,18 @@ def getReferencePoseRelativeToPivot():
 @app.route('/clear-pivots')
 def clearPivots():
     session.permanent = True
-
-    db.truncate()
-    return 'Database: ' + str(db.all())
+    clearPivotsFromDatabase(db, Marker)
+    return 'Pivots cleared'
 
 @app.route('/load-pivots')
 def loadPivots():
     session.permanent = True
-
     updateSessionFromDatabase()
-
     return jsonify(session._get_current_object())
 
 ##################################
 # POSE ESTIMATION RELATED ROUTES #
 ##################################
-
 @app.route('/pose')
 def getCoordinates():
     session.permanent = True
@@ -230,14 +242,21 @@ def getPoseFromMultiplePivots():
 
     referenceId = request.args.get('reference', default=9, type=int)
     context = request.args.get('context', default='test', type=str)
+    pivotToSave = request.args.get('pivot_to_save', default='', type=str)
 
     referencePoseRelativeToPivots = session._get_current_object().get('referencePoseRelativeToPivot')
 
-    pivotIds = list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if OBJECT_DESCRIPTION[k]['objectType'] in ['arm', 'pivot']]))
+    pivotIds = [9, 101, 103, 104, 105, 106, 107]
     markerIds =  list(map(int, [k for k in OBJECT_DESCRIPTION.keys() if OBJECT_DESCRIPTION[k]['objectType'] not in ['arm', 'hmd', 'pivot']]))
 
-    posesFound = estimatePosesFromMultiplePivots(markerIds, pivotIds, referenceId, referencePoseRelativeToPivots, 
-                                                 cameraMatrix, distCoeffs, cam=cam)
+    knownMarkerPoses = session._get_current_object().get('markerPoseRelativeToReference', {})
+    knownPivotPoses = session._get_current_object().get('pivotPoseRelativeToReference', {})
+    lastKnownPoses = {**knownMarkerPoses, **knownPivotPoses}
+    targetPivotId, posesFound = estimatePosesFromMultiplePivots(markerIds, pivotIds, referenceId, referencePoseRelativeToPivots,
+                                                                cameraMatrix, distCoeffs, lastKnownPoses=lastKnownPoses, cam=cam)
+
+    if str(targetPivotId) == pivotToSave:
+        saveGraphicsPointsToSession(pivotToSave, posesFound['hmd'])
 
     # HMD pose -> filter
     if 'hmd' in posesFound.keys():
@@ -258,13 +277,11 @@ def getPoseFromMultiplePivots():
     updateSession(posesFound)
 
     knownMarkerPoses = session._get_current_object().get('markerPoseRelativeToReference', {})
-    knownPivotPoses = session._get_current_object().get('pivotPoseRelativeToReference', {})
+    lastKnownPoses = {**knownMarkerPoses, **knownPivotPoses}
 
-    allPoses = {**knownMarkerPoses, **knownPivotPoses}
+    unrealPoses = posesToUnrealCoordinatesFromPivot(lastKnownPoses, context)
 
-    unrealPoses = posesToUnrealCoordinatesFromPivot(allPoses, context)
-
-    return jsonify(unrealPoses)
+    return jsonify({**unrealPoses, **{'target_pivot_id': str(targetPivotId)}})
 
 @app.route('/pose-sequence')
 def getCoordinateSequence():
@@ -303,10 +320,37 @@ def estimateLivePose():
 
     return jsonify(lastKnownCoords)
 
+###########################
+# GRAPHICS RELATED ROUTES #
+###########################
+@app.route('/save-graphics-points-from-session-to-database')
+def saveGraphicsPointsFromSessionToDatabase():
+    sampleCount = saveGraphicsPointsToDatabase()
+
+    return 'Session saved to database. Sample count: ' + str(sampleCount)
+
+@app.route('/generate-graphic')
+def generateGraphic():
+    markerId = request.args.get('marker', default=9, type=int)
+    coordinate = request.args.get('coordinate', default='x', type=str)
+
+    poseWithTimestamps = fetchPoseWithTimestamp(db, markerId, Marker)
+
+    timestamps = [p['timestamp'] for p in poseWithTimestamps]
+    samples = [p['pose'][coordinate] for p in poseWithTimestamps]
+
+    plotPoints(timestamps, samples, 'Tempo (ms)', coordinate)
+
+    return 'OK'
+
+@app.route('/clear-graphics-points')
+def deleteGraphicsPoints():
+    clearGraphicsPoints()
+    return 'Graphics points cleared'
+
 ####################################
 # PARAMETERS FOR EXECUTING THE APP #
 ####################################
-
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, exitHandler)
     app.run('127.0.0.1',port=5000)
